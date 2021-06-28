@@ -1,4 +1,4 @@
-build/stm32f0xx_hal_msp.o: Core/Src/stm32f0xx_hal_msp.c Core/Inc/main.h \
+build/dynamixel.o: Core/Src/dynamixel.c Core/Inc/main.h \
  Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal.h \
  Core/Inc/stm32f0xx_hal_conf.h \
  Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_rcc.h \
@@ -24,8 +24,8 @@ build/stm32f0xx_hal_msp.o: Core/Src/stm32f0xx_hal_msp.c Core/Inc/main.h \
  Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_pwr_ex.h \
  Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_uart.h \
  Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_uart_ex.h \
- Core/Inc/LX16A.h Core/Inc/usart.h Core/Inc/main.h \
- Core/Inc/servo_control.h
+ Core/Inc/LX16A.h Core/Inc/usart.h Core/Inc/main.h Core/Inc/dxl_hal.h \
+ Core/Inc/dynamixel.h
 
 Core/Inc/main.h:
 
@@ -89,4 +89,6 @@ Core/Inc/usart.h:
 
 Core/Inc/main.h:
 
-Core/Inc/servo_control.h:
+Core/Inc/dxl_hal.h:
+
+Core/Inc/dynamixel.h:

@@ -1,0 +1,3482 @@
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 1
+
+
+   1              		.cpu cortex-m0
+   2              		.eabi_attribute 20, 1
+   3              		.eabi_attribute 21, 1
+   4              		.eabi_attribute 23, 3
+   5              		.eabi_attribute 24, 1
+   6              		.eabi_attribute 25, 1
+   7              		.eabi_attribute 26, 1
+   8              		.eabi_attribute 30, 1
+   9              		.eabi_attribute 34, 0
+  10              		.eabi_attribute 18, 4
+  11              		.file	"dynamixel.c"
+  12              		.text
+  13              	.Ltext0:
+  14              		.cfi_sections	.debug_frame
+  15              		.section	.text.HAL2DXL_error,"ax",%progbits
+  16              		.align	1
+  17              		.arch armv6s-m
+  18              		.syntax unified
+  19              		.code	16
+  20              		.thumb_func
+  21              		.fpu softvfp
+  23              	HAL2DXL_error:
+  24              	.LVL0:
+  25              	.LFB40:
+  26              		.file 1 "Core/Src/dynamixel.c"
+   1:Core/Src/dynamixel.c **** # include "main.h"
+   2:Core/Src/dynamixel.c **** 
+   3:Core/Src/dynamixel.c **** # define ID                    (2)
+   4:Core/Src/dynamixel.c **** # define LENGTH                (3)
+   5:Core/Src/dynamixel.c **** # define INSTRUCTION        (4)
+   6:Core/Src/dynamixel.c **** # define ERRBIT                (4)
+   7:Core/Src/dynamixel.c **** # define PARAMETER            (5)
+   8:Core/Src/dynamixel.c **** 
+   9:Core/Src/dynamixel.c **** # define DXL_BYTE            (1)
+  10:Core/Src/dynamixel.c **** # define DXL_WORD            (2)
+  11:Core/Src/dynamixel.c **** 
+  12:Core/Src/dynamixel.c **** unsigned char instruction_packet[MAXNUM_TXPARAM + 6] = { 0 };
+  13:Core/Src/dynamixel.c **** unsigned char status_packet[MAXNUM_RXPARAM + 6] = { 0 };
+  14:Core/Src/dynamixel.c **** 
+  15:Core/Src/dynamixel.c **** /*========== INTERNAL ==========*/
+  16:Core/Src/dynamixel.c **** /// pointer to write to when a read operation is finished
+  17:Core/Src/dynamixel.c **** unsigned *read_value = NULL;
+  18:Core/Src/dynamixel.c **** /// callback to call to when a read operation is finished
+  19:Core/Src/dynamixel.c **** void (*read_callback)() = NULL;
+  20:Core/Src/dynamixel.c **** 
+  21:Core/Src/dynamixel.c **** /// is the current tx/rx transfer still running
+  22:Core/Src/dynamixel.c **** int busy = 0;
+  23:Core/Src/dynamixel.c **** /// return status of the last tx/rx transfer
+  24:Core/Src/dynamixel.c **** int status = DXL_SUCCESS;
+  25:Core/Src/dynamixel.c **** 
+  26:Core/Src/dynamixel.c **** /// is the header part of the rx transfer received
+  27:Core/Src/dynamixel.c **** int header_received = 0;
+  28:Core/Src/dynamixel.c **** /// is the args part of the rx transfer received
+  29:Core/Src/dynamixel.c **** int args_received = 0;
+  30:Core/Src/dynamixel.c **** 
+  31:Core/Src/dynamixel.c **** /// time after which timeout expires (in ms)
+  32:Core/Src/dynamixel.c **** uint32_t timeout = 100;
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 2
+
+
+  33:Core/Src/dynamixel.c **** /// time at which timeout was started (in ms)
+  34:Core/Src/dynamixel.c **** uint32_t time = 0;
+  35:Core/Src/dynamixel.c **** 
+  36:Core/Src/dynamixel.c **** //# define USE_MUTEX
+  37:Core/Src/dynamixel.c **** # ifdef USE_MUTEX
+  38:Core/Src/dynamixel.c ****     # define LOCK_INIT         // TODO
+  39:Core/Src/dynamixel.c ****     # define LOCK            // TODO
+  40:Core/Src/dynamixel.c ****     # define UNLOCK            // TODO
+  41:Core/Src/dynamixel.c ****     # define LOCK_DEINIT     // TODO
+  42:Core/Src/dynamixel.c **** # else
+  43:Core/Src/dynamixel.c ****     # define LOCK_INIT         0
+  44:Core/Src/dynamixel.c ****     # define LOCK             0
+  45:Core/Src/dynamixel.c ****     # define UNLOCK
+  46:Core/Src/dynamixel.c ****     # define LOCK_DEINIT
+  47:Core/Src/dynamixel.c **** # endif
+  48:Core/Src/dynamixel.c **** 
+  49:Core/Src/dynamixel.c **** static int HAL2DXL_error(const HAL_StatusTypeDef err, const int is_rx)
+  50:Core/Src/dynamixel.c **** {
+  27              		.loc 1 50 1 view -0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31              		@ link register save eliminated.
+  51:Core/Src/dynamixel.c ****     //ASSERT(is_rx == 0 || is_rx == 1);
+  52:Core/Src/dynamixel.c **** 
+  53:Core/Src/dynamixel.c ****     switch (err)
+  32              		.loc 1 53 5 view .LVU1
+  33 0000 0228     		cmp	r0, #2
+  34 0002 07D0     		beq	.L2
+  35 0004 0328     		cmp	r0, #3
+  36 0006 07D0     		beq	.L3
+  37 0008 0128     		cmp	r0, #1
+  38 000a 01D0     		beq	.L6
+  39 000c 0A20     		movs	r0, #10
+  40              	.LVL1:
+  41              	.L1:
+  54:Core/Src/dynamixel.c ****     {
+  55:Core/Src/dynamixel.c ****         case HAL_OK:        return DXL_SUCCESS;
+  56:Core/Src/dynamixel.c ****         case HAL_ERROR:     return DXL_TXERROR      + is_rx;
+  57:Core/Src/dynamixel.c ****         case HAL_BUSY:      return DXL_TXBUSY       + is_rx;
+  58:Core/Src/dynamixel.c ****         case HAL_TIMEOUT:   return DXL_TXTIMEOUT    + is_rx;
+  59:Core/Src/dynamixel.c ****         //default:            //ASSERT(!"what the hell are you doing here");
+  60:Core/Src/dynamixel.c ****     }
+  61:Core/Src/dynamixel.c **** 
+  62:Core/Src/dynamixel.c ****     return DXL_SUCCESS;
+  63:Core/Src/dynamixel.c **** }
+  42              		.loc 1 63 1 is_stmt 0 view .LVU2
+  43              		@ sp needed
+  44 000e 7047     		bx	lr
+  45              	.LVL2:
+  46              	.L6:
+  56:Core/Src/dynamixel.c ****         case HAL_BUSY:      return DXL_TXBUSY       + is_rx;
+  47              		.loc 1 56 53 view .LVU3
+  48 0010 0800     		movs	r0, r1
+  49              	.LVL3:
+  56:Core/Src/dynamixel.c ****         case HAL_BUSY:      return DXL_TXBUSY       + is_rx;
+  50              		.loc 1 56 53 view .LVU4
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 3
+
+
+  51 0012 FCE7     		b	.L1
+  52              	.LVL4:
+  53              	.L2:
+  57:Core/Src/dynamixel.c ****         case HAL_TIMEOUT:   return DXL_TXTIMEOUT    + is_rx;
+  54              		.loc 1 57 29 is_stmt 1 view .LVU5
+  57:Core/Src/dynamixel.c ****         case HAL_TIMEOUT:   return DXL_TXTIMEOUT    + is_rx;
+  55              		.loc 1 57 53 is_stmt 0 view .LVU6
+  56 0014 881C     		adds	r0, r1, #2
+  57              	.LVL5:
+  57:Core/Src/dynamixel.c ****         case HAL_TIMEOUT:   return DXL_TXTIMEOUT    + is_rx;
+  58              		.loc 1 57 53 view .LVU7
+  59 0016 FAE7     		b	.L1
+  60              	.LVL6:
+  61              	.L3:
+  58:Core/Src/dynamixel.c ****         //default:            //ASSERT(!"what the hell are you doing here");
+  62              		.loc 1 58 29 is_stmt 1 view .LVU8
+  58:Core/Src/dynamixel.c ****         //default:            //ASSERT(!"what the hell are you doing here");
+  63              		.loc 1 58 53 is_stmt 0 view .LVU9
+  64 0018 081D     		adds	r0, r1, #4
+  65              	.LVL7:
+  58:Core/Src/dynamixel.c ****         //default:            //ASSERT(!"what the hell are you doing here");
+  66              		.loc 1 58 53 view .LVU10
+  67 001a F8E7     		b	.L1
+  68              		.cfi_endproc
+  69              	.LFE40:
+  71              		.section	.text.rx_args_callback,"ax",%progbits
+  72              		.align	1
+  73              		.global	rx_args_callback
+  74              		.syntax unified
+  75              		.code	16
+  76              		.thumb_func
+  77              		.fpu softvfp
+  79              	rx_args_callback:
+  80              	.LFB45:
+  64:Core/Src/dynamixel.c **** 
+  65:Core/Src/dynamixel.c **** /// Set error and return, if condition is fulfilled
+  66:Core/Src/dynamixel.c **** # define RETURN_IF(COND, ERR_VAR, ERR) \
+  67:Core/Src/dynamixel.c ****     if (COND) \
+  68:Core/Src/dynamixel.c ****     { \
+  69:Core/Src/dynamixel.c ****         ERR_VAR = ERR; \
+  70:Core/Src/dynamixel.c ****         return; \
+  71:Core/Src/dynamixel.c ****     }
+  72:Core/Src/dynamixel.c **** 
+  73:Core/Src/dynamixel.c **** /// Abort transmission, set error and return, if condition is fulfilled
+  74:Core/Src/dynamixel.c **** # define ABORT_IF(COND, ERR_VAR, ERR) \
+  75:Core/Src/dynamixel.c ****     if (COND) \
+  76:Core/Src/dynamixel.c ****     { \
+  77:Core/Src/dynamixel.c ****         ERR_VAR = ERR; \
+  78:Core/Src/dynamixel.c ****         dxl_abort(); \
+  79:Core/Src/dynamixel.c ****         return; \
+  80:Core/Src/dynamixel.c ****     }
+  81:Core/Src/dynamixel.c **** 
+  82:Core/Src/dynamixel.c **** /// Abort current transmission
+  83:Core/Src/dynamixel.c **** void dxl_abort(void)
+  84:Core/Src/dynamixel.c **** {
+  85:Core/Src/dynamixel.c ****     dxl_hal_abort();
+  86:Core/Src/dynamixel.c **** 
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 4
+
+
+  87:Core/Src/dynamixel.c ****     if (busy)
+  88:Core/Src/dynamixel.c ****     {
+  89:Core/Src/dynamixel.c ****         busy = 0;
+  90:Core/Src/dynamixel.c ****         UNLOCK;
+  91:Core/Src/dynamixel.c ****     }
+  92:Core/Src/dynamixel.c **** }
+  93:Core/Src/dynamixel.c **** 
+  94:Core/Src/dynamixel.c **** // TODO: replace manual timeout, by timer + callback
+  95:Core/Src/dynamixel.c **** // timeout should be set to -1 on rx_*_callback
+  96:Core/Src/dynamixel.c **** 
+  97:Core/Src/dynamixel.c **** // timeout callback to call every ms
+  98:Core/Src/dynamixel.c **** /*
+  99:Core/Src/dynamixel.c **** /// time left until timeout
+ 100:Core/Src/dynamixel.c **** int timeout = -1;
+ 101:Core/Src/dynamixel.c **** void timeout_callback(void)
+ 102:Core/Src/dynamixel.c **** {
+ 103:Core/Src/dynamixel.c ****     if (timeout-- == 0)
+ 104:Core/Src/dynamixel.c ****     {
+ 105:Core/Src/dynamixel.c ****         status = DXL_RXTIMEOUT;
+ 106:Core/Src/dynamixel.c ****         dxl_abort();
+ 107:Core/Src/dynamixel.c ****     }
+ 108:Core/Src/dynamixel.c **** }
+ 109:Core/Src/dynamixel.c **** */
+ 110:Core/Src/dynamixel.c **** 
+ 111:Core/Src/dynamixel.c **** void dxl_set_timeout(const unsigned ms)
+ 112:Core/Src/dynamixel.c **** {
+ 113:Core/Src/dynamixel.c ****     timeout = ms;
+ 114:Core/Src/dynamixel.c **** }
+ 115:Core/Src/dynamixel.c **** 
+ 116:Core/Src/dynamixel.c **** void dxl_timeout_start(void)
+ 117:Core/Src/dynamixel.c **** {
+ 118:Core/Src/dynamixel.c ****     time = HAL_GetTick();
+ 119:Core/Src/dynamixel.c **** }
+ 120:Core/Src/dynamixel.c **** 
+ 121:Core/Src/dynamixel.c **** int check_timeout(void)
+ 122:Core/Src/dynamixel.c **** {
+ 123:Core/Src/dynamixel.c ****     return (HAL_GetTick() - time) > timeout;
+ 124:Core/Src/dynamixel.c **** }
+ 125:Core/Src/dynamixel.c **** 
+ 126:Core/Src/dynamixel.c **** /// Callback executed after the rest of the status packet has been received
+ 127:Core/Src/dynamixel.c **** void rx_args_callback(void)
+ 128:Core/Src/dynamixel.c **** {
+  81              		.loc 1 128 1 is_stmt 1 view -0
+  82              		.cfi_startproc
+  83              		@ args = 0, pretend = 0, frame = 0
+  84              		@ frame_needed = 0, uses_anonymous_args = 0
+  85              		@ link register save eliminated.
+ 129:Core/Src/dynamixel.c ****     args_received = 1;
+  86              		.loc 1 129 5 view .LVU12
+  87              		.loc 1 129 19 is_stmt 0 view .LVU13
+  88 0000 014B     		ldr	r3, .L8
+  89 0002 0122     		movs	r2, #1
+  90 0004 1A60     		str	r2, [r3]
+ 130:Core/Src/dynamixel.c **** }
+  91              		.loc 1 130 1 view .LVU14
+  92              		@ sp needed
+  93 0006 7047     		bx	lr
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 5
+
+
+  94              	.L9:
+  95              		.align	2
+  96              	.L8:
+  97 0008 00000000 		.word	.LANCHOR0
+  98              		.cfi_endproc
+  99              	.LFE45:
+ 101              		.section	.text.rx_header_callback,"ax",%progbits
+ 102              		.align	1
+ 103              		.global	rx_header_callback
+ 104              		.syntax unified
+ 105              		.code	16
+ 106              		.thumb_func
+ 107              		.fpu softvfp
+ 109              	rx_header_callback:
+ 110              	.LFB46:
+ 131:Core/Src/dynamixel.c **** 
+ 132:Core/Src/dynamixel.c **** /// Callback executed after header of the status packet has been received (first bytes)
+ 133:Core/Src/dynamixel.c **** void rx_header_callback(void)
+ 134:Core/Src/dynamixel.c **** {
+ 111              		.loc 1 134 1 is_stmt 1 view -0
+ 112              		.cfi_startproc
+ 113              		@ args = 0, pretend = 0, frame = 0
+ 114              		@ frame_needed = 0, uses_anonymous_args = 0
+ 115 0000 10B5     		push	{r4, lr}
+ 116              	.LCFI0:
+ 117              		.cfi_def_cfa_offset 8
+ 118              		.cfi_offset 4, -8
+ 119              		.cfi_offset 14, -4
+ 135:Core/Src/dynamixel.c ****     dxl_set_rx_callback(rx_args_callback);
+ 120              		.loc 1 135 5 view .LVU16
+ 121 0002 0948     		ldr	r0, .L11
+ 122 0004 FFF7FEFF 		bl	dxl_set_rx_callback
+ 123              	.LVL8:
+ 136:Core/Src/dynamixel.c ****     status = HAL2DXL_error(dxl_hal_rx(status_packet + INSTRUCTION, status_packet[LENGTH] - 1), 1);
+ 124              		.loc 1 136 5 view .LVU17
+ 125              		.loc 1 136 81 is_stmt 0 view .LVU18
+ 126 0008 0848     		ldr	r0, .L11+4
+ 127 000a C178     		ldrb	r1, [r0, #3]
+ 128              		.loc 1 136 90 view .LVU19
+ 129 000c 0139     		subs	r1, r1, #1
+ 130              		.loc 1 136 14 view .LVU20
+ 131 000e 0430     		adds	r0, r0, #4
+ 132 0010 FFF7FEFF 		bl	dxl_hal_rx
+ 133              	.LVL9:
+ 134 0014 0121     		movs	r1, #1
+ 135 0016 FFF7FEFF 		bl	HAL2DXL_error
+ 136              	.LVL10:
+ 137              		.loc 1 136 12 view .LVU21
+ 138 001a 054B     		ldr	r3, .L11+8
+ 139 001c 1860     		str	r0, [r3]
+ 137:Core/Src/dynamixel.c **** 
+ 138:Core/Src/dynamixel.c ****     header_received = 1;
+ 140              		.loc 1 138 5 is_stmt 1 view .LVU22
+ 141              		.loc 1 138 21 is_stmt 0 view .LVU23
+ 142 001e 054B     		ldr	r3, .L11+12
+ 143 0020 0122     		movs	r2, #1
+ 144 0022 1A60     		str	r2, [r3]
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 6
+
+
+ 139:Core/Src/dynamixel.c **** }
+ 145              		.loc 1 139 1 view .LVU24
+ 146              		@ sp needed
+ 147 0024 10BD     		pop	{r4, pc}
+ 148              	.L12:
+ 149 0026 C046     		.align	2
+ 150              	.L11:
+ 151 0028 00000000 		.word	rx_args_callback
+ 152 002c 00000000 		.word	.LANCHOR1
+ 153 0030 00000000 		.word	.LANCHOR2
+ 154 0034 00000000 		.word	.LANCHOR3
+ 155              		.cfi_endproc
+ 156              	.LFE46:
+ 158              		.section	.text.dxl_abort,"ax",%progbits
+ 159              		.align	1
+ 160              		.global	dxl_abort
+ 161              		.syntax unified
+ 162              		.code	16
+ 163              		.thumb_func
+ 164              		.fpu softvfp
+ 166              	dxl_abort:
+ 167              	.LFB41:
+  84:Core/Src/dynamixel.c ****     dxl_hal_abort();
+ 168              		.loc 1 84 1 is_stmt 1 view -0
+ 169              		.cfi_startproc
+ 170              		@ args = 0, pretend = 0, frame = 0
+ 171              		@ frame_needed = 0, uses_anonymous_args = 0
+ 172 0000 10B5     		push	{r4, lr}
+ 173              	.LCFI1:
+ 174              		.cfi_def_cfa_offset 8
+ 175              		.cfi_offset 4, -8
+ 176              		.cfi_offset 14, -4
+  85:Core/Src/dynamixel.c **** 
+ 177              		.loc 1 85 5 view .LVU26
+ 178 0002 FFF7FEFF 		bl	dxl_hal_abort
+ 179              	.LVL11:
+  87:Core/Src/dynamixel.c ****     {
+ 180              		.loc 1 87 5 view .LVU27
+  87:Core/Src/dynamixel.c ****     {
+ 181              		.loc 1 87 9 is_stmt 0 view .LVU28
+ 182 0006 044B     		ldr	r3, .L15
+ 183 0008 1B68     		ldr	r3, [r3]
+  87:Core/Src/dynamixel.c ****     {
+ 184              		.loc 1 87 8 view .LVU29
+ 185 000a 002B     		cmp	r3, #0
+ 186 000c 02D0     		beq	.L13
+  89:Core/Src/dynamixel.c ****         UNLOCK;
+ 187              		.loc 1 89 9 is_stmt 1 view .LVU30
+  89:Core/Src/dynamixel.c ****         UNLOCK;
+ 188              		.loc 1 89 14 is_stmt 0 view .LVU31
+ 189 000e 024B     		ldr	r3, .L15
+ 190 0010 0022     		movs	r2, #0
+ 191 0012 1A60     		str	r2, [r3]
+  90:Core/Src/dynamixel.c ****     }
+ 192              		.loc 1 90 15 is_stmt 1 view .LVU32
+ 193              	.L13:
+  92:Core/Src/dynamixel.c **** 
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 7
+
+
+ 194              		.loc 1 92 1 is_stmt 0 view .LVU33
+ 195              		@ sp needed
+ 196 0014 10BD     		pop	{r4, pc}
+ 197              	.L16:
+ 198 0016 C046     		.align	2
+ 199              	.L15:
+ 200 0018 00000000 		.word	.LANCHOR4
+ 201              		.cfi_endproc
+ 202              	.LFE41:
+ 204              		.section	.text.dxl_set_timeout,"ax",%progbits
+ 205              		.align	1
+ 206              		.global	dxl_set_timeout
+ 207              		.syntax unified
+ 208              		.code	16
+ 209              		.thumb_func
+ 210              		.fpu softvfp
+ 212              	dxl_set_timeout:
+ 213              	.LVL12:
+ 214              	.LFB42:
+ 112:Core/Src/dynamixel.c ****     timeout = ms;
+ 215              		.loc 1 112 1 is_stmt 1 view -0
+ 216              		.cfi_startproc
+ 217              		@ args = 0, pretend = 0, frame = 0
+ 218              		@ frame_needed = 0, uses_anonymous_args = 0
+ 219              		@ link register save eliminated.
+ 113:Core/Src/dynamixel.c **** }
+ 220              		.loc 1 113 5 view .LVU35
+ 113:Core/Src/dynamixel.c **** }
+ 221              		.loc 1 113 13 is_stmt 0 view .LVU36
+ 222 0000 014B     		ldr	r3, .L18
+ 223 0002 1860     		str	r0, [r3]
+ 114:Core/Src/dynamixel.c **** 
+ 224              		.loc 1 114 1 view .LVU37
+ 225              		@ sp needed
+ 226 0004 7047     		bx	lr
+ 227              	.L19:
+ 228 0006 C046     		.align	2
+ 229              	.L18:
+ 230 0008 00000000 		.word	.LANCHOR5
+ 231              		.cfi_endproc
+ 232              	.LFE42:
+ 234              		.section	.text.dxl_timeout_start,"ax",%progbits
+ 235              		.align	1
+ 236              		.global	dxl_timeout_start
+ 237              		.syntax unified
+ 238              		.code	16
+ 239              		.thumb_func
+ 240              		.fpu softvfp
+ 242              	dxl_timeout_start:
+ 243              	.LFB43:
+ 117:Core/Src/dynamixel.c ****     time = HAL_GetTick();
+ 244              		.loc 1 117 1 is_stmt 1 view -0
+ 245              		.cfi_startproc
+ 246              		@ args = 0, pretend = 0, frame = 0
+ 247              		@ frame_needed = 0, uses_anonymous_args = 0
+ 248 0000 10B5     		push	{r4, lr}
+ 249              	.LCFI2:
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 8
+
+
+ 250              		.cfi_def_cfa_offset 8
+ 251              		.cfi_offset 4, -8
+ 252              		.cfi_offset 14, -4
+ 118:Core/Src/dynamixel.c **** }
+ 253              		.loc 1 118 5 view .LVU39
+ 118:Core/Src/dynamixel.c **** }
+ 254              		.loc 1 118 12 is_stmt 0 view .LVU40
+ 255 0002 FFF7FEFF 		bl	HAL_GetTick
+ 256              	.LVL13:
+ 118:Core/Src/dynamixel.c **** }
+ 257              		.loc 1 118 10 view .LVU41
+ 258 0006 014B     		ldr	r3, .L21
+ 259 0008 1860     		str	r0, [r3]
+ 119:Core/Src/dynamixel.c **** 
+ 260              		.loc 1 119 1 view .LVU42
+ 261              		@ sp needed
+ 262 000a 10BD     		pop	{r4, pc}
+ 263              	.L22:
+ 264              		.align	2
+ 265              	.L21:
+ 266 000c 00000000 		.word	.LANCHOR6
+ 267              		.cfi_endproc
+ 268              	.LFE43:
+ 270              		.section	.text.tx_callback,"ax",%progbits
+ 271              		.align	1
+ 272              		.global	tx_callback
+ 273              		.syntax unified
+ 274              		.code	16
+ 275              		.thumb_func
+ 276              		.fpu softvfp
+ 278              	tx_callback:
+ 279              	.LFB47:
+ 140:Core/Src/dynamixel.c **** 
+ 141:Core/Src/dynamixel.c **** /// Callback executed after instruction packet has been sent
+ 142:Core/Src/dynamixel.c **** void tx_callback(void)
+ 143:Core/Src/dynamixel.c **** {
+ 280              		.loc 1 143 1 is_stmt 1 view -0
+ 281              		.cfi_startproc
+ 282              		@ args = 0, pretend = 0, frame = 0
+ 283              		@ frame_needed = 0, uses_anonymous_args = 0
+ 284 0000 10B5     		push	{r4, lr}
+ 285              	.LCFI3:
+ 286              		.cfi_def_cfa_offset 8
+ 287              		.cfi_offset 4, -8
+ 288              		.cfi_offset 14, -4
+ 144:Core/Src/dynamixel.c ****     // no response on broadcast
+ 145:Core/Src/dynamixel.c ****     RETURN_IF(instruction_packet[ID] == BROADCAST_ID, status, DXL_SUCCESS)
+ 289              		.loc 1 145 5 view .LVU44
+ 290 0002 0D4B     		ldr	r3, .L27
+ 291 0004 9B78     		ldrb	r3, [r3, #2]
+ 292 0006 FE2B     		cmp	r3, #254
+ 293 0008 11D0     		beq	.L26
+ 146:Core/Src/dynamixel.c **** 
+ 147:Core/Src/dynamixel.c ****     dxl_set_timeout(250);
+ 294              		.loc 1 147 5 view .LVU45
+ 295 000a FA20     		movs	r0, #250
+ 296 000c FFF7FEFF 		bl	dxl_set_timeout
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 9
+
+
+ 297              	.LVL14:
+ 148:Core/Src/dynamixel.c ****     dxl_set_rx_callback(rx_header_callback);
+ 298              		.loc 1 148 5 view .LVU46
+ 299 0010 0A48     		ldr	r0, .L27+4
+ 300 0012 FFF7FEFF 		bl	dxl_set_rx_callback
+ 301              	.LVL15:
+ 149:Core/Src/dynamixel.c ****     dxl_timeout_start();
+ 302              		.loc 1 149 5 view .LVU47
+ 303 0016 FFF7FEFF 		bl	dxl_timeout_start
+ 304              	.LVL16:
+ 150:Core/Src/dynamixel.c **** 
+ 151:Core/Src/dynamixel.c ****     status = HAL2DXL_error(dxl_hal_rx(status_packet, INSTRUCTION), 0);
+ 305              		.loc 1 151 5 view .LVU48
+ 306              		.loc 1 151 14 is_stmt 0 view .LVU49
+ 307 001a 0421     		movs	r1, #4
+ 308 001c 0848     		ldr	r0, .L27+8
+ 309 001e FFF7FEFF 		bl	dxl_hal_rx
+ 310              	.LVL17:
+ 311 0022 0021     		movs	r1, #0
+ 312 0024 FFF7FEFF 		bl	HAL2DXL_error
+ 313              	.LVL18:
+ 314              		.loc 1 151 12 view .LVU50
+ 315 0028 064B     		ldr	r3, .L27+12
+ 316 002a 1860     		str	r0, [r3]
+ 317              	.L23:
+ 152:Core/Src/dynamixel.c **** }
+ 318              		.loc 1 152 1 view .LVU51
+ 319              		@ sp needed
+ 320 002c 10BD     		pop	{r4, pc}
+ 321              	.L26:
+ 145:Core/Src/dynamixel.c **** 
+ 322              		.loc 1 145 5 is_stmt 1 discriminator 1 view .LVU52
+ 323 002e 054B     		ldr	r3, .L27+12
+ 324 0030 0A22     		movs	r2, #10
+ 325 0032 1A60     		str	r2, [r3]
+ 145:Core/Src/dynamixel.c **** 
+ 326              		.loc 1 145 5 discriminator 1 view .LVU53
+ 327 0034 FAE7     		b	.L23
+ 328              	.L28:
+ 329 0036 C046     		.align	2
+ 330              	.L27:
+ 331 0038 00000000 		.word	instruction_packet
+ 332 003c 00000000 		.word	rx_header_callback
+ 333 0040 00000000 		.word	.LANCHOR1
+ 334 0044 00000000 		.word	.LANCHOR2
+ 335              		.cfi_endproc
+ 336              	.LFE47:
+ 338              		.section	.text.check_timeout,"ax",%progbits
+ 339              		.align	1
+ 340              		.global	check_timeout
+ 341              		.syntax unified
+ 342              		.code	16
+ 343              		.thumb_func
+ 344              		.fpu softvfp
+ 346              	check_timeout:
+ 347              	.LFB44:
+ 122:Core/Src/dynamixel.c ****     return (HAL_GetTick() - time) > timeout;
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 10
+
+
+ 348              		.loc 1 122 1 view -0
+ 349              		.cfi_startproc
+ 350              		@ args = 0, pretend = 0, frame = 0
+ 351              		@ frame_needed = 0, uses_anonymous_args = 0
+ 352 0000 10B5     		push	{r4, lr}
+ 353              	.LCFI4:
+ 354              		.cfi_def_cfa_offset 8
+ 355              		.cfi_offset 4, -8
+ 356              		.cfi_offset 14, -4
+ 123:Core/Src/dynamixel.c **** }
+ 357              		.loc 1 123 5 view .LVU55
+ 123:Core/Src/dynamixel.c **** }
+ 358              		.loc 1 123 13 is_stmt 0 view .LVU56
+ 359 0002 FFF7FEFF 		bl	HAL_GetTick
+ 360              	.LVL19:
+ 123:Core/Src/dynamixel.c **** }
+ 361              		.loc 1 123 27 view .LVU57
+ 362 0006 044B     		ldr	r3, .L30
+ 363 0008 1B68     		ldr	r3, [r3]
+ 364 000a C31A     		subs	r3, r0, r3
+ 123:Core/Src/dynamixel.c **** }
+ 365              		.loc 1 123 35 view .LVU58
+ 366 000c 034A     		ldr	r2, .L30+4
+ 367 000e 1068     		ldr	r0, [r2]
+ 368 0010 9842     		cmp	r0, r3
+ 369 0012 8041     		sbcs	r0, r0, r0
+ 370 0014 4042     		rsbs	r0, r0, #0
+ 124:Core/Src/dynamixel.c **** 
+ 371              		.loc 1 124 1 view .LVU59
+ 372              		@ sp needed
+ 373 0016 10BD     		pop	{r4, pc}
+ 374              	.L31:
+ 375              		.align	2
+ 376              	.L30:
+ 377 0018 00000000 		.word	.LANCHOR6
+ 378 001c 00000000 		.word	.LANCHOR5
+ 379              		.cfi_endproc
+ 380              	.LFE44:
+ 382              		.section	.text.checksum,"ax",%progbits
+ 383              		.align	1
+ 384              		.global	checksum
+ 385              		.syntax unified
+ 386              		.code	16
+ 387              		.thumb_func
+ 388              		.fpu softvfp
+ 390              	checksum:
+ 391              	.LVL20:
+ 392              	.LFB48:
+ 153:Core/Src/dynamixel.c **** 
+ 154:Core/Src/dynamixel.c **** /// Compute checksum
+ 155:Core/Src/dynamixel.c **** unsigned char checksum(const unsigned char *packet, const unsigned length)
+ 156:Core/Src/dynamixel.c **** {
+ 393              		.loc 1 156 1 is_stmt 1 view -0
+ 394              		.cfi_startproc
+ 395              		@ args = 0, pretend = 0, frame = 0
+ 396              		@ frame_needed = 0, uses_anonymous_args = 0
+ 397              		.loc 1 156 1 is_stmt 0 view .LVU61
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 11
+
+
+ 398 0000 10B5     		push	{r4, lr}
+ 399              	.LCFI5:
+ 400              		.cfi_def_cfa_offset 8
+ 401              		.cfi_offset 4, -8
+ 402              		.cfi_offset 14, -4
+ 157:Core/Src/dynamixel.c ****     unsigned check = 0;
+ 403              		.loc 1 157 5 is_stmt 1 view .LVU62
+ 404              	.LVL21:
+ 158:Core/Src/dynamixel.c ****     for (unsigned i = 0; i < length; i++)
+ 405              		.loc 1 158 5 view .LVU63
+ 406              	.LBB2:
+ 407              		.loc 1 158 10 view .LVU64
+ 408              		.loc 1 158 19 is_stmt 0 view .LVU65
+ 409 0002 0023     		movs	r3, #0
+ 410              	.LBE2:
+ 157:Core/Src/dynamixel.c ****     unsigned check = 0;
+ 411              		.loc 1 157 14 view .LVU66
+ 412 0004 0022     		movs	r2, #0
+ 413              	.LVL22:
+ 414              	.L33:
+ 415              	.LBB3:
+ 416              		.loc 1 158 26 is_stmt 1 discriminator 1 view .LVU67
+ 417              		.loc 1 158 5 is_stmt 0 discriminator 1 view .LVU68
+ 418 0006 8B42     		cmp	r3, r1
+ 419 0008 04D2     		bcs	.L35
+ 159:Core/Src/dynamixel.c ****         check += packet[ID + i];
+ 420              		.loc 1 159 9 is_stmt 1 discriminator 3 view .LVU69
+ 421              		.loc 1 159 28 is_stmt 0 discriminator 3 view .LVU70
+ 422 000a 9C1C     		adds	r4, r3, #2
+ 423              		.loc 1 159 24 discriminator 3 view .LVU71
+ 424 000c 045D     		ldrb	r4, [r0, r4]
+ 425              		.loc 1 159 15 discriminator 3 view .LVU72
+ 426 000e 1219     		adds	r2, r2, r4
+ 427              	.LVL23:
+ 158:Core/Src/dynamixel.c ****     for (unsigned i = 0; i < length; i++)
+ 428              		.loc 1 158 38 is_stmt 1 discriminator 3 view .LVU73
+ 158:Core/Src/dynamixel.c ****     for (unsigned i = 0; i < length; i++)
+ 429              		.loc 1 158 39 is_stmt 0 discriminator 3 view .LVU74
+ 430 0010 0133     		adds	r3, r3, #1
+ 431              	.LVL24:
+ 158:Core/Src/dynamixel.c ****     for (unsigned i = 0; i < length; i++)
+ 432              		.loc 1 158 39 discriminator 3 view .LVU75
+ 433 0012 F8E7     		b	.L33
+ 434              	.L35:
+ 158:Core/Src/dynamixel.c ****     for (unsigned i = 0; i < length; i++)
+ 435              		.loc 1 158 39 discriminator 3 view .LVU76
+ 436              	.LBE3:
+ 160:Core/Src/dynamixel.c **** 
+ 161:Core/Src/dynamixel.c ****     return ~check & 0xFF;
+ 437              		.loc 1 161 5 is_stmt 1 view .LVU77
+ 438              		.loc 1 161 19 is_stmt 0 view .LVU78
+ 439 0014 D043     		mvns	r0, r2
+ 440              	.LVL25:
+ 441              		.loc 1 161 19 view .LVU79
+ 442 0016 C0B2     		uxtb	r0, r0
+ 162:Core/Src/dynamixel.c **** }
+ 443              		.loc 1 162 1 view .LVU80
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 12
+
+
+ 444              		@ sp needed
+ 445 0018 10BD     		pop	{r4, pc}
+ 446              		.cfi_endproc
+ 447              	.LFE48:
+ 449              		.section	.text.dxl_txrx_packet,"ax",%progbits
+ 450              		.align	1
+ 451              		.global	dxl_txrx_packet
+ 452              		.syntax unified
+ 453              		.code	16
+ 454              		.thumb_func
+ 455              		.fpu softvfp
+ 457              	dxl_txrx_packet:
+ 458              	.LFB49:
+ 163:Core/Src/dynamixel.c **** 
+ 164:Core/Src/dynamixel.c **** /// Start a tx/rx transmission
+ 165:Core/Src/dynamixel.c **** int dxl_txrx_packet()
+ 166:Core/Src/dynamixel.c **** {
+ 459              		.loc 1 166 1 is_stmt 1 view -0
+ 460              		.cfi_startproc
+ 461              		@ args = 0, pretend = 0, frame = 0
+ 462              		@ frame_needed = 0, uses_anonymous_args = 0
+ 463 0000 70B5     		push	{r4, r5, r6, lr}
+ 464              	.LCFI6:
+ 465              		.cfi_def_cfa_offset 16
+ 466              		.cfi_offset 4, -16
+ 467              		.cfi_offset 5, -12
+ 468              		.cfi_offset 6, -8
+ 469              		.cfi_offset 14, -4
+ 167:Core/Src/dynamixel.c ****     // packet : 0xFF, 0xFF, ID, LENGTH, INSTRUCTION, PARAM 1, ..., PARAM N, CHECKSUM
+ 168:Core/Src/dynamixel.c **** 
+ 169:Core/Src/dynamixel.c ****     // ASSERT(instruction_packet[LENGTH] <= (MAXNUM_TXPARAM + 2));
+ 170:Core/Src/dynamixel.c ****     // ASSERT(instruction_packet[INSTRUCTION] == INST_PING
+ 171:Core/Src/dynamixel.c ****     //     || instruction_packet[INSTRUCTION] == INST_READ
+ 172:Core/Src/dynamixel.c ****     //     || instruction_packet[INSTRUCTION] == INST_WRITE
+ 173:Core/Src/dynamixel.c ****     //     || instruction_packet[INSTRUCTION] == INST_REG_WRITE
+ 174:Core/Src/dynamixel.c ****     //     || instruction_packet[INSTRUCTION] == INST_ACTION
+ 175:Core/Src/dynamixel.c ****     //     || instruction_packet[INSTRUCTION] == INST_RESET
+ 176:Core/Src/dynamixel.c ****     //     || instruction_packet[INSTRUCTION] == INST_SYNC_WRITE);
+ 177:Core/Src/dynamixel.c **** 
+ 178:Core/Src/dynamixel.c ****     instruction_packet[0] = 0xFF;
+ 470              		.loc 1 178 5 view .LVU82
+ 471              		.loc 1 178 27 is_stmt 0 view .LVU83
+ 472 0002 0F4C     		ldr	r4, .L37
+ 473 0004 FF23     		movs	r3, #255
+ 474 0006 2370     		strb	r3, [r4]
+ 179:Core/Src/dynamixel.c ****     instruction_packet[1] = 0xFF;
+ 475              		.loc 1 179 5 is_stmt 1 view .LVU84
+ 476              		.loc 1 179 27 is_stmt 0 view .LVU85
+ 477 0008 6370     		strb	r3, [r4, #1]
+ 180:Core/Src/dynamixel.c **** 
+ 181:Core/Src/dynamixel.c ****     unsigned length = instruction_packet[LENGTH];
+ 478              		.loc 1 181 5 is_stmt 1 view .LVU86
+ 479              		.loc 1 181 41 is_stmt 0 view .LVU87
+ 480 000a E578     		ldrb	r5, [r4, #3]
+ 481              	.LVL26:
+ 182:Core/Src/dynamixel.c ****     instruction_packet[LENGTH + length] = checksum(instruction_packet, length);
+ 482              		.loc 1 182 5 is_stmt 1 view .LVU88
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 13
+
+
+ 483              		.loc 1 182 31 is_stmt 0 view .LVU89
+ 484 000c EE1C     		adds	r6, r5, #3
+ 485              		.loc 1 182 43 view .LVU90
+ 486 000e 2900     		movs	r1, r5
+ 487 0010 2000     		movs	r0, r4
+ 488 0012 FFF7FEFF 		bl	checksum
+ 489              	.LVL27:
+ 490              		.loc 1 182 41 view .LVU91
+ 491 0016 A055     		strb	r0, [r4, r6]
+ 183:Core/Src/dynamixel.c **** 
+ 184:Core/Src/dynamixel.c ****     length += 4;
+ 492              		.loc 1 184 5 is_stmt 1 view .LVU92
+ 493              		.loc 1 184 12 is_stmt 0 view .LVU93
+ 494 0018 0435     		adds	r5, r5, #4
+ 495              	.LVL28:
+ 185:Core/Src/dynamixel.c **** 
+ 186:Core/Src/dynamixel.c ****     dxl_set_timeout(length);
+ 496              		.loc 1 186 5 is_stmt 1 view .LVU94
+ 497 001a 2800     		movs	r0, r5
+ 498 001c FFF7FEFF 		bl	dxl_set_timeout
+ 499              	.LVL29:
+ 187:Core/Src/dynamixel.c ****     dxl_set_tx_callback(tx_callback);
+ 500              		.loc 1 187 5 view .LVU95
+ 501 0020 0848     		ldr	r0, .L37+4
+ 502 0022 FFF7FEFF 		bl	dxl_set_tx_callback
+ 503              	.LVL30:
+ 188:Core/Src/dynamixel.c ****     dxl_timeout_start();
+ 504              		.loc 1 188 5 view .LVU96
+ 505 0026 FFF7FEFF 		bl	dxl_timeout_start
+ 506              	.LVL31:
+ 189:Core/Src/dynamixel.c **** 
+ 190:Core/Src/dynamixel.c ****     status = DXL_SUCCESS;
+ 507              		.loc 1 190 5 view .LVU97
+ 508              		.loc 1 190 12 is_stmt 0 view .LVU98
+ 509 002a 074B     		ldr	r3, .L37+8
+ 510 002c 0A22     		movs	r2, #10
+ 511 002e 1A60     		str	r2, [r3]
+ 191:Core/Src/dynamixel.c ****     return HAL2DXL_error(dxl_hal_tx(instruction_packet, length), 0);
+ 512              		.loc 1 191 5 is_stmt 1 view .LVU99
+ 513              		.loc 1 191 12 is_stmt 0 view .LVU100
+ 514 0030 2900     		movs	r1, r5
+ 515 0032 2000     		movs	r0, r4
+ 516 0034 FFF7FEFF 		bl	dxl_hal_tx
+ 517              	.LVL32:
+ 518 0038 0021     		movs	r1, #0
+ 519 003a FFF7FEFF 		bl	HAL2DXL_error
+ 520              	.LVL33:
+ 192:Core/Src/dynamixel.c **** }
+ 521              		.loc 1 192 1 view .LVU101
+ 522              		@ sp needed
+ 523              	.LVL34:
+ 524              	.LVL35:
+ 525              		.loc 1 192 1 view .LVU102
+ 526 003e 70BD     		pop	{r4, r5, r6, pc}
+ 527              	.L38:
+ 528              		.align	2
+ 529              	.L37:
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 14
+
+
+ 530 0040 00000000 		.word	instruction_packet
+ 531 0044 00000000 		.word	tx_callback
+ 532 0048 00000000 		.word	.LANCHOR2
+ 533              		.cfi_endproc
+ 534              	.LFE49:
+ 536              		.section	.text.dxl_get_parameter,"ax",%progbits
+ 537              		.align	1
+ 538              		.global	dxl_get_parameter
+ 539              		.syntax unified
+ 540              		.code	16
+ 541              		.thumb_func
+ 542              		.fpu softvfp
+ 544              	dxl_get_parameter:
+ 545              	.LVL36:
+ 546              	.LFB50:
+ 193:Core/Src/dynamixel.c **** 
+ 194:Core/Src/dynamixel.c **** int dxl_get_parameter(const int index)
+ 195:Core/Src/dynamixel.c **** {
+ 547              		.loc 1 195 1 is_stmt 1 view -0
+ 548              		.cfi_startproc
+ 549              		@ args = 0, pretend = 0, frame = 0
+ 550              		@ frame_needed = 0, uses_anonymous_args = 0
+ 551              		@ link register save eliminated.
+ 196:Core/Src/dynamixel.c ****     return status_packet[PARAMETER + index];
+ 552              		.loc 1 196 5 view .LVU104
+ 553              		.loc 1 196 36 is_stmt 0 view .LVU105
+ 554 0000 0530     		adds	r0, r0, #5
+ 555              	.LVL37:
+ 556              		.loc 1 196 25 view .LVU106
+ 557 0002 014B     		ldr	r3, .L40
+ 558 0004 185C     		ldrb	r0, [r3, r0]
+ 559              	.LVL38:
+ 197:Core/Src/dynamixel.c **** }
+ 560              		.loc 1 197 1 view .LVU107
+ 561              		@ sp needed
+ 562 0006 7047     		bx	lr
+ 563              	.L41:
+ 564              		.align	2
+ 565              	.L40:
+ 566 0008 00000000 		.word	.LANCHOR1
+ 567              		.cfi_endproc
+ 568              	.LFE50:
+ 570              		.section	.text.read_byte_callback,"ax",%progbits
+ 571              		.align	1
+ 572              		.syntax unified
+ 573              		.code	16
+ 574              		.thumb_func
+ 575              		.fpu softvfp
+ 577              	read_byte_callback:
+ 578              	.LFB68:
+ 198:Core/Src/dynamixel.c **** 
+ 199:Core/Src/dynamixel.c **** int dxl_makeword(const int lowbyte, const int highbyte)
+ 200:Core/Src/dynamixel.c **** {
+ 201:Core/Src/dynamixel.c ****     return (highbyte & 0xFF) << 8 | (lowbyte & 0xFF);
+ 202:Core/Src/dynamixel.c **** }
+ 203:Core/Src/dynamixel.c **** 
+ 204:Core/Src/dynamixel.c **** int dxl_get_lowbyte(const int word)
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 15
+
+
+ 205:Core/Src/dynamixel.c **** {
+ 206:Core/Src/dynamixel.c ****     return word & 0xFF;
+ 207:Core/Src/dynamixel.c **** }
+ 208:Core/Src/dynamixel.c **** 
+ 209:Core/Src/dynamixel.c **** int dxl_get_highbyte(const int word)
+ 210:Core/Src/dynamixel.c **** {
+ 211:Core/Src/dynamixel.c ****     return (word & 0xFF00) >> 8;
+ 212:Core/Src/dynamixel.c **** }
+ 213:Core/Src/dynamixel.c **** 
+ 214:Core/Src/dynamixel.c **** /*========== EXTERNAL ==========*/
+ 215:Core/Src/dynamixel.c **** /// Initialize dxl with UART \ref huart and baud rate \ref baudrate
+ 216:Core/Src/dynamixel.c **** int dxl_initialize(UART_HandleTypeDef *huart, const int baudrate)
+ 217:Core/Src/dynamixel.c **** {
+ 218:Core/Src/dynamixel.c ****     if (dxl_hal_open(huart, baudrate) != HAL_OK)
+ 219:Core/Src/dynamixel.c ****         return DXL_FAIL;
+ 220:Core/Src/dynamixel.c **** 
+ 221:Core/Src/dynamixel.c ****     if (LOCK_INIT)
+ 222:Core/Src/dynamixel.c ****         return DXL_FAIL;
+ 223:Core/Src/dynamixel.c **** 
+ 224:Core/Src/dynamixel.c ****     return DXL_SUCCESS;
+ 225:Core/Src/dynamixel.c **** }
+ 226:Core/Src/dynamixel.c **** 
+ 227:Core/Src/dynamixel.c **** /// Terminate the current dxl
+ 228:Core/Src/dynamixel.c **** void dxl_terminate(void)
+ 229:Core/Src/dynamixel.c **** {
+ 230:Core/Src/dynamixel.c ****     LOCK_DEINIT;
+ 231:Core/Src/dynamixel.c ****     dxl_hal_close();
+ 232:Core/Src/dynamixel.c **** }
+ 233:Core/Src/dynamixel.c **** 
+ 234:Core/Src/dynamixel.c **** int dxl_set_baudrate(const int baudrate)
+ 235:Core/Src/dynamixel.c **** {
+ 236:Core/Src/dynamixel.c ****     return dxl_hal_set_baudrate(baudrate) == HAL_OK;
+ 237:Core/Src/dynamixel.c **** }
+ 238:Core/Src/dynamixel.c **** 
+ 239:Core/Src/dynamixel.c **** void dxl_set_id(const unsigned id)
+ 240:Core/Src/dynamixel.c **** {
+ 241:Core/Src/dynamixel.c ****  //   ASSERT(id <= 253 || id == 255);
+ 242:Core/Src/dynamixel.c ****     instruction_packet[ID] = (unsigned char) id;
+ 243:Core/Src/dynamixel.c **** }
+ 244:Core/Src/dynamixel.c **** 
+ 245:Core/Src/dynamixel.c **** void dxl_set_instruction(const unsigned instruction)
+ 246:Core/Src/dynamixel.c **** {
+ 247:Core/Src/dynamixel.c ****     //ASSERT(instruction < 0xFF);
+ 248:Core/Src/dynamixel.c ****     instruction_packet[INSTRUCTION] = (unsigned char) instruction;
+ 249:Core/Src/dynamixel.c **** }
+ 250:Core/Src/dynamixel.c **** 
+ 251:Core/Src/dynamixel.c **** void dxl_set_parameter(const unsigned index, const unsigned value)
+ 252:Core/Src/dynamixel.c **** {
+ 253:Core/Src/dynamixel.c ****     //ASSERT(value < 0xFF);
+ 254:Core/Src/dynamixel.c ****     instruction_packet[PARAMETER + index] = (unsigned char) value;
+ 255:Core/Src/dynamixel.c **** }
+ 256:Core/Src/dynamixel.c **** 
+ 257:Core/Src/dynamixel.c **** void dxl_set_length(const unsigned length)
+ 258:Core/Src/dynamixel.c **** {
+ 259:Core/Src/dynamixel.c ****     //ASSERT(length <= MAXNUM_TXPARAM + 2);
+ 260:Core/Src/dynamixel.c ****     instruction_packet[LENGTH] = (unsigned char) length;
+ 261:Core/Src/dynamixel.c **** }
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 16
+
+
+ 262:Core/Src/dynamixel.c **** 
+ 263:Core/Src/dynamixel.c **** int dxl_get_length(void)
+ 264:Core/Src/dynamixel.c **** {
+ 265:Core/Src/dynamixel.c ****     // parameter length = length - 2 (error and checksum)
+ 266:Core/Src/dynamixel.c ****     return status_packet[LENGTH] - 2;
+ 267:Core/Src/dynamixel.c **** }
+ 268:Core/Src/dynamixel.c **** 
+ 269:Core/Src/dynamixel.c **** /// Get error in status packet
+ 270:Core/Src/dynamixel.c **** int dxl_get_error(void)
+ 271:Core/Src/dynamixel.c **** {
+ 272:Core/Src/dynamixel.c ****     return status_packet[ERRBIT];
+ 273:Core/Src/dynamixel.c **** }
+ 274:Core/Src/dynamixel.c **** 
+ 275:Core/Src/dynamixel.c **** /// Get the name for a DXL_ERROR
+ 276:Core/Src/dynamixel.c **** const char* dxl_get_error_name(const int error)
+ 277:Core/Src/dynamixel.c **** {
+ 278:Core/Src/dynamixel.c ****     switch (error)
+ 279:Core/Src/dynamixel.c ****     {
+ 280:Core/Src/dynamixel.c ****         // DXL HAL errors
+ 281:Core/Src/dynamixel.c ****         case DXL_TXERROR:      return "DXL_TXERROR";
+ 282:Core/Src/dynamixel.c ****         case DXL_RXERROR:      return "DXL_RXERROR";
+ 283:Core/Src/dynamixel.c **** 
+ 284:Core/Src/dynamixel.c ****         case DXL_TXBUSY:       return "DXL_TXBUSY";
+ 285:Core/Src/dynamixel.c ****         case DXL_RXBUSY:       return "DXL_RXBUSY";
+ 286:Core/Src/dynamixel.c **** 
+ 287:Core/Src/dynamixel.c ****         case DXL_TXTIMEOUT:    return "DXL_TXTIMEOUT";
+ 288:Core/Src/dynamixel.c ****         case DXL_RXTIMEOUT:    return "DXL_RXTIMEOUT";
+ 289:Core/Src/dynamixel.c **** 
+ 290:Core/Src/dynamixel.c ****         // DYNAMIXEL errors
+ 291:Core/Src/dynamixel.c ****         case DXL_TXFAIL:       return "DXL_TXFAIL";
+ 292:Core/Src/dynamixel.c ****         case DXL_RXFAIL:       return "DXL_RXFAIL";
+ 293:Core/Src/dynamixel.c **** 
+ 294:Core/Src/dynamixel.c ****         case DXL_TXCORRUPT:    return "DXL_TXCORRUPT";
+ 295:Core/Src/dynamixel.c ****         case DXL_RXCORRUPT:    return "DXL_RXCORRUPT";
+ 296:Core/Src/dynamixel.c **** 
+ 297:Core/Src/dynamixel.c ****         case DXL_SUCCESS:      return "DXL_SUCCESS";
+ 298:Core/Src/dynamixel.c ****         case DXL_FAIL:         return "DXL_FAIL";
+ 299:Core/Src/dynamixel.c **** 
+ 300:Core/Src/dynamixel.c ****         case DXL_BUSY:         return "DXL_BUSY";
+ 301:Core/Src/dynamixel.c ****         case DXL_ERROR:        return "DXL_ERROR";
+ 302:Core/Src/dynamixel.c ****     }
+ 303:Core/Src/dynamixel.c **** 
+ 304:Core/Src/dynamixel.c ****     //ASSERT(!"Invalid code for DXL_ERROR");
+ 305:Core/Src/dynamixel.c **** 
+ 306:Core/Src/dynamixel.c ****     return NULL;
+ 307:Core/Src/dynamixel.c **** }
+ 308:Core/Src/dynamixel.c **** 
+ 309:Core/Src/dynamixel.c **** /// Return true if a transmission is ongoing
+ 310:Core/Src/dynamixel.c **** int dxl_is_busy(void)
+ 311:Core/Src/dynamixel.c **** {
+ 312:Core/Src/dynamixel.c ****     return busy;
+ 313:Core/Src/dynamixel.c **** }
+ 314:Core/Src/dynamixel.c **** 
+ 315:Core/Src/dynamixel.c **** /// Get error status for current transmission (use it after dxl_process_status_packet)
+ 316:Core/Src/dynamixel.c **** int dxl_get_txrx_status()
+ 317:Core/Src/dynamixel.c **** {
+ 318:Core/Src/dynamixel.c ****     return status;
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 17
+
+
+ 319:Core/Src/dynamixel.c **** }
+ 320:Core/Src/dynamixel.c **** 
+ 321:Core/Src/dynamixel.c **** /// Check for errors in the status packet
+ 322:Core/Src/dynamixel.c **** void dxl_process_status_packet(void)
+ 323:Core/Src/dynamixel.c **** {
+ 324:Core/Src/dynamixel.c ****     // if error in a previous call
+ 325:Core/Src/dynamixel.c ****     if (status != DXL_SUCCESS)
+ 326:Core/Src/dynamixel.c ****         return;
+ 327:Core/Src/dynamixel.c **** 
+ 328:Core/Src/dynamixel.c ****     // packet : 0xFF, 0xFF, ID, LENGTH, ERROR, PARAM 1, ..., PARAM N, CHECKSUM
+ 329:Core/Src/dynamixel.c ****     if (header_received)
+ 330:Core/Src/dynamixel.c ****     {
+ 331:Core/Src/dynamixel.c ****         header_received = 0;
+ 332:Core/Src/dynamixel.c **** 
+ 333:Core/Src/dynamixel.c ****         // PART 1: check header
+ 334:Core/Src/dynamixel.c ****         ABORT_IF(status_packet[0] != 0xFF || status_packet[1] != 0xFF, status, DXL_RXCORRUPT)
+ 335:Core/Src/dynamixel.c **** 
+ 336:Core/Src/dynamixel.c ****         // PART 2: check id pairing and error
+ 337:Core/Src/dynamixel.c ****         ABORT_IF(instruction_packet[ID] != status_packet[ID], status, DXL_RXCORRUPT)
+ 338:Core/Src/dynamixel.c ****         ABORT_IF(status_packet[ERRBIT], status, DXL_ERROR)
+ 339:Core/Src/dynamixel.c ****     }
+ 340:Core/Src/dynamixel.c **** 
+ 341:Core/Src/dynamixel.c ****     if (args_received)
+ 342:Core/Src/dynamixel.c ****     {
+ 343:Core/Src/dynamixel.c ****         args_received = 0;
+ 344:Core/Src/dynamixel.c **** 
+ 345:Core/Src/dynamixel.c ****         // PART 3: retrieve parameter length
+ 346:Core/Src/dynamixel.c ****         const int length = dxl_get_length();
+ 347:Core/Src/dynamixel.c **** 
+ 348:Core/Src/dynamixel.c ****         // PART 4: check checksum (with error ID, LENGTH and ERROR)
+ 349:Core/Src/dynamixel.c ****         const unsigned char check = checksum(status_packet, length + 3);
+ 350:Core/Src/dynamixel.c ****         if (status_packet[PARAMETER + length] != check)
+ 351:Core/Src/dynamixel.c ****         	status = DXL_RXCORRUPT;
+ 352:Core/Src/dynamixel.c ****         else if (read_callback)
+ 353:Core/Src/dynamixel.c ****             (*read_callback)();
+ 354:Core/Src/dynamixel.c **** 
+ 355:Core/Src/dynamixel.c **** 		read_callback = NULL;
+ 356:Core/Src/dynamixel.c **** 		read_value = NULL;
+ 357:Core/Src/dynamixel.c **** 
+ 358:Core/Src/dynamixel.c ****         if (busy)
+ 359:Core/Src/dynamixel.c ****         {
+ 360:Core/Src/dynamixel.c ****             busy = 0;
+ 361:Core/Src/dynamixel.c ****             UNLOCK;
+ 362:Core/Src/dynamixel.c ****         }
+ 363:Core/Src/dynamixel.c ****     }
+ 364:Core/Src/dynamixel.c **** 
+ 365:Core/Src/dynamixel.c ****     // TODO: move timeout as a timer interrupt
+ 366:Core/Src/dynamixel.c ****     ABORT_IF(check_timeout(), status, DXL_RXTIMEOUT)
+ 367:Core/Src/dynamixel.c **** }
+ 368:Core/Src/dynamixel.c **** 
+ 369:Core/Src/dynamixel.c **** int dxl_ping(const unsigned id)
+ 370:Core/Src/dynamixel.c **** {
+ 371:Core/Src/dynamixel.c ****     if (LOCK)
+ 372:Core/Src/dynamixel.c ****         return DXL_BUSY;
+ 373:Core/Src/dynamixel.c ****     busy = 1;
+ 374:Core/Src/dynamixel.c **** 
+ 375:Core/Src/dynamixel.c ****     dxl_set_id(id);
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 18
+
+
+ 376:Core/Src/dynamixel.c ****     dxl_set_instruction(INST_PING);
+ 377:Core/Src/dynamixel.c ****     dxl_set_length(2);
+ 378:Core/Src/dynamixel.c **** 
+ 379:Core/Src/dynamixel.c ****     return dxl_txrx_packet();
+ 380:Core/Src/dynamixel.c **** }
+ 381:Core/Src/dynamixel.c **** 
+ 382:Core/Src/dynamixel.c **** static void read_byte_callback()
+ 383:Core/Src/dynamixel.c **** {
+ 579              		.loc 1 383 1 is_stmt 1 view -0
+ 580              		.cfi_startproc
+ 581              		@ args = 0, pretend = 0, frame = 0
+ 582              		@ frame_needed = 0, uses_anonymous_args = 0
+ 583 0000 10B5     		push	{r4, lr}
+ 584              	.LCFI7:
+ 585              		.cfi_def_cfa_offset 8
+ 586              		.cfi_offset 4, -8
+ 587              		.cfi_offset 14, -4
+ 384:Core/Src/dynamixel.c ****     *read_value = dxl_get_parameter(0);
+ 588              		.loc 1 384 5 view .LVU109
+ 589              		.loc 1 384 19 is_stmt 0 view .LVU110
+ 590 0002 0020     		movs	r0, #0
+ 591 0004 FFF7FEFF 		bl	dxl_get_parameter
+ 592              	.LVL39:
+ 593              		.loc 1 384 5 view .LVU111
+ 594 0008 034B     		ldr	r3, .L43
+ 595 000a 1B68     		ldr	r3, [r3]
+ 596              		.loc 1 384 17 view .LVU112
+ 597 000c 1860     		str	r0, [r3]
+ 385:Core/Src/dynamixel.c ****     read_callback = NULL;
+ 598              		.loc 1 385 5 is_stmt 1 view .LVU113
+ 599              		.loc 1 385 19 is_stmt 0 view .LVU114
+ 600 000e 034B     		ldr	r3, .L43+4
+ 601 0010 0022     		movs	r2, #0
+ 602 0012 1A60     		str	r2, [r3]
+ 386:Core/Src/dynamixel.c **** }
+ 603              		.loc 1 386 1 view .LVU115
+ 604              		@ sp needed
+ 605 0014 10BD     		pop	{r4, pc}
+ 606              	.L44:
+ 607 0016 C046     		.align	2
+ 608              	.L43:
+ 609 0018 00000000 		.word	.LANCHOR7
+ 610 001c 00000000 		.word	.LANCHOR8
+ 611              		.cfi_endproc
+ 612              	.LFE68:
+ 614              		.global	__aeabi_i2f
+ 615              		.global	__aeabi_fdiv
+ 616              		.section	.text.read_byte_callback_voltage,"ax",%progbits
+ 617              		.align	1
+ 618              		.global	read_byte_callback_voltage
+ 619              		.syntax unified
+ 620              		.code	16
+ 621              		.thumb_func
+ 622              		.fpu softvfp
+ 624              	read_byte_callback_voltage:
+ 625              	.LFB78:
+ 387:Core/Src/dynamixel.c **** 
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 19
+
+
+ 388:Core/Src/dynamixel.c **** /// Read 1 byte at address \ref address from the AX12 \ref id
+ 389:Core/Src/dynamixel.c **** int dxl_read_byte(const unsigned id, const int address, unsigned *value)
+ 390:Core/Src/dynamixel.c **** {
+ 391:Core/Src/dynamixel.c ****     // ASSERT(0 <= address);
+ 392:Core/Src/dynamixel.c ****     // ASSERT(address <= rw_permission_size);
+ 393:Core/Src/dynamixel.c ****     // ASSERT(dxl_readable_byte[address]);
+ 394:Core/Src/dynamixel.c **** 
+ 395:Core/Src/dynamixel.c ****     // ASSERT(value != NULL);
+ 396:Core/Src/dynamixel.c **** 
+ 397:Core/Src/dynamixel.c ****     if (LOCK)
+ 398:Core/Src/dynamixel.c ****         return DXL_BUSY;
+ 399:Core/Src/dynamixel.c ****     busy = 1;
+ 400:Core/Src/dynamixel.c **** 
+ 401:Core/Src/dynamixel.c ****     dxl_set_id(id);
+ 402:Core/Src/dynamixel.c ****     dxl_set_instruction(INST_READ);
+ 403:Core/Src/dynamixel.c ****     dxl_set_parameter(0, address);
+ 404:Core/Src/dynamixel.c ****     dxl_set_parameter(1, DXL_BYTE);
+ 405:Core/Src/dynamixel.c ****     dxl_set_length(2);
+ 406:Core/Src/dynamixel.c **** 
+ 407:Core/Src/dynamixel.c ****     read_value = value;
+ 408:Core/Src/dynamixel.c ****     if (read_callback == NULL)
+ 409:Core/Src/dynamixel.c ****         read_callback = read_byte_callback;
+ 410:Core/Src/dynamixel.c **** 
+ 411:Core/Src/dynamixel.c ****     return dxl_txrx_packet();
+ 412:Core/Src/dynamixel.c **** }
+ 413:Core/Src/dynamixel.c **** 
+ 414:Core/Src/dynamixel.c **** /// Write 1 byte at address \ref address in the AX12 \ref id
+ 415:Core/Src/dynamixel.c **** int dxl_write_byte(const unsigned id, const int address, const int value)
+ 416:Core/Src/dynamixel.c **** {
+ 417:Core/Src/dynamixel.c ****     // ASSERT(0 <= address);
+ 418:Core/Src/dynamixel.c ****     // ASSERT(address <= rw_permission_size);
+ 419:Core/Src/dynamixel.c ****     // ASSERT(dxl_writable_byte[address]);
+ 420:Core/Src/dynamixel.c **** 
+ 421:Core/Src/dynamixel.c ****     if (LOCK)
+ 422:Core/Src/dynamixel.c ****         return DXL_BUSY;
+ 423:Core/Src/dynamixel.c ****     busy = 1;
+ 424:Core/Src/dynamixel.c **** 
+ 425:Core/Src/dynamixel.c ****     dxl_set_id(id);
+ 426:Core/Src/dynamixel.c ****     dxl_set_instruction(INST_WRITE);
+ 427:Core/Src/dynamixel.c ****     dxl_set_parameter(0, address);
+ 428:Core/Src/dynamixel.c ****     dxl_set_parameter(1, value);
+ 429:Core/Src/dynamixel.c ****     dxl_set_length(2);
+ 430:Core/Src/dynamixel.c **** 
+ 431:Core/Src/dynamixel.c ****     return dxl_txrx_packet();
+ 432:Core/Src/dynamixel.c **** }
+ 433:Core/Src/dynamixel.c **** 
+ 434:Core/Src/dynamixel.c **** static void read_word_callback()
+ 435:Core/Src/dynamixel.c **** {
+ 436:Core/Src/dynamixel.c ****     *read_value = dxl_makeword(dxl_get_parameter(0), dxl_get_parameter(1));
+ 437:Core/Src/dynamixel.c **** }
+ 438:Core/Src/dynamixel.c **** 
+ 439:Core/Src/dynamixel.c **** /// Read 2 bytes at address \ref address from the AX12 \ref id
+ 440:Core/Src/dynamixel.c **** int dxl_read_word(const unsigned id, const int address, unsigned *value)
+ 441:Core/Src/dynamixel.c **** {
+ 442:Core/Src/dynamixel.c ****     // ASSERT(0 <= address);
+ 443:Core/Src/dynamixel.c ****     // ASSERT(address <= rw_permission_size);
+ 444:Core/Src/dynamixel.c ****     // ASSERT(dxl_readable_word[address]);
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 20
+
+
+ 445:Core/Src/dynamixel.c **** 
+ 446:Core/Src/dynamixel.c ****     // ASSERT(value != NULL);
+ 447:Core/Src/dynamixel.c **** 
+ 448:Core/Src/dynamixel.c ****     if (LOCK)
+ 449:Core/Src/dynamixel.c ****         return DXL_BUSY;
+ 450:Core/Src/dynamixel.c ****     busy = 1;
+ 451:Core/Src/dynamixel.c **** 
+ 452:Core/Src/dynamixel.c ****     dxl_set_id(id);
+ 453:Core/Src/dynamixel.c ****     dxl_set_instruction(INST_READ);
+ 454:Core/Src/dynamixel.c ****     dxl_set_parameter(0, address);
+ 455:Core/Src/dynamixel.c ****     dxl_set_parameter(1, DXL_WORD);
+ 456:Core/Src/dynamixel.c ****     dxl_set_length(2);
+ 457:Core/Src/dynamixel.c **** 
+ 458:Core/Src/dynamixel.c ****     read_value = value;
+ 459:Core/Src/dynamixel.c ****     if (read_callback == NULL)
+ 460:Core/Src/dynamixel.c ****         read_callback = read_word_callback;
+ 461:Core/Src/dynamixel.c **** 
+ 462:Core/Src/dynamixel.c ****     return dxl_txrx_packet();
+ 463:Core/Src/dynamixel.c **** }
+ 464:Core/Src/dynamixel.c **** 
+ 465:Core/Src/dynamixel.c **** /// Write 2 bytes at address \ref address in the AX12 \ref id
+ 466:Core/Src/dynamixel.c **** int dxl_write_word(const unsigned id, const int address, const int value)
+ 467:Core/Src/dynamixel.c **** {
+ 468:Core/Src/dynamixel.c ****     // ASSERT(0 <= address);
+ 469:Core/Src/dynamixel.c ****     // ASSERT(address <= rw_permission_size);
+ 470:Core/Src/dynamixel.c ****     // ASSERT(dxl_writable_word[address]);
+ 471:Core/Src/dynamixel.c **** 
+ 472:Core/Src/dynamixel.c ****     if (LOCK)
+ 473:Core/Src/dynamixel.c ****         return DXL_BUSY;
+ 474:Core/Src/dynamixel.c ****     busy = 1;
+ 475:Core/Src/dynamixel.c **** 
+ 476:Core/Src/dynamixel.c ****     dxl_set_id(id);
+ 477:Core/Src/dynamixel.c ****     dxl_set_instruction(INST_WRITE);
+ 478:Core/Src/dynamixel.c ****     dxl_set_parameter(0, address);
+ 479:Core/Src/dynamixel.c ****     dxl_set_parameter(1, dxl_get_lowbyte(value));
+ 480:Core/Src/dynamixel.c ****     dxl_set_parameter(2, dxl_get_highbyte(value));
+ 481:Core/Src/dynamixel.c ****     dxl_set_length(3);
+ 482:Core/Src/dynamixel.c **** 
+ 483:Core/Src/dynamixel.c ****     return dxl_txrx_packet();
+ 484:Core/Src/dynamixel.c **** }
+ 485:Core/Src/dynamixel.c **** 
+ 486:Core/Src/dynamixel.c **** // SET_GOAL_POSITION
+ 487:Core/Src/dynamixel.c **** int dxl_set_goal_position(const unsigned id, const unsigned angle)
+ 488:Core/Src/dynamixel.c **** {
+ 489:Core/Src/dynamixel.c ****     //ASSERT(angle <= 300);
+ 490:Core/Src/dynamixel.c ****     return dxl_write_byte(id, DXL_ADDRESS_GOAL_POSITION, angle * 1023 / 300);
+ 491:Core/Src/dynamixel.c **** }
+ 492:Core/Src/dynamixel.c **** 
+ 493:Core/Src/dynamixel.c **** // GET_GOAL_POSITION
+ 494:Core/Src/dynamixel.c **** static void read_byte_callback_goal_position(void)
+ 495:Core/Src/dynamixel.c **** {
+ 496:Core/Src/dynamixel.c ****     const unsigned word = dxl_makeword(dxl_get_parameter(0), dxl_get_parameter(1));
+ 497:Core/Src/dynamixel.c ****     *read_value = word / 1023 * 300;
+ 498:Core/Src/dynamixel.c **** }
+ 499:Core/Src/dynamixel.c **** 
+ 500:Core/Src/dynamixel.c **** int dxl_get_goal_position(const unsigned id, unsigned *angle)
+ 501:Core/Src/dynamixel.c **** {
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 21
+
+
+ 502:Core/Src/dynamixel.c ****     read_callback = read_byte_callback_goal_position;
+ 503:Core/Src/dynamixel.c ****     return dxl_read_word(id, DXL_ADDRESS_GOAL_POSITION, angle);
+ 504:Core/Src/dynamixel.c **** }
+ 505:Core/Src/dynamixel.c **** 
+ 506:Core/Src/dynamixel.c **** // SET_AX12_DELAY_TIME
+ 507:Core/Src/dynamixel.c **** int dxl_set_AX12_delay_time(const unsigned id, const unsigned time)
+ 508:Core/Src/dynamixel.c **** {
+ 509:Core/Src/dynamixel.c ****     return dxl_write_byte(id, DXL_ADDRESS_RETURN_DELAY, time / 2);
+ 510:Core/Src/dynamixel.c **** }
+ 511:Core/Src/dynamixel.c **** 
+ 512:Core/Src/dynamixel.c **** // GET_VOLTAGE
+ 513:Core/Src/dynamixel.c **** void read_byte_callback_voltage(void)
+ 514:Core/Src/dynamixel.c **** {
+ 626              		.loc 1 514 1 is_stmt 1 view -0
+ 627              		.cfi_startproc
+ 628              		@ args = 0, pretend = 0, frame = 0
+ 629              		@ frame_needed = 0, uses_anonymous_args = 0
+ 630 0000 10B5     		push	{r4, lr}
+ 631              	.LCFI8:
+ 632              		.cfi_def_cfa_offset 8
+ 633              		.cfi_offset 4, -8
+ 634              		.cfi_offset 14, -4
+ 515:Core/Src/dynamixel.c **** 	// only value being float, so it will be an exception
+ 516:Core/Src/dynamixel.c ****     float *ptr = (float*) read_value;
+ 635              		.loc 1 516 5 view .LVU117
+ 636              		.loc 1 516 12 is_stmt 0 view .LVU118
+ 637 0002 064B     		ldr	r3, .L46
+ 638 0004 1C68     		ldr	r4, [r3]
+ 639              	.LVL40:
+ 517:Core/Src/dynamixel.c ****     *ptr = (float) dxl_get_parameter(0) / 10;
+ 640              		.loc 1 517 5 is_stmt 1 view .LVU119
+ 641              		.loc 1 517 20 is_stmt 0 view .LVU120
+ 642 0006 0020     		movs	r0, #0
+ 643 0008 FFF7FEFF 		bl	dxl_get_parameter
+ 644              	.LVL41:
+ 645              		.loc 1 517 12 view .LVU121
+ 646 000c FFF7FEFF 		bl	__aeabi_i2f
+ 647              	.LVL42:
+ 648              		.loc 1 517 41 view .LVU122
+ 649 0010 0349     		ldr	r1, .L46+4
+ 650 0012 FFF7FEFF 		bl	__aeabi_fdiv
+ 651              	.LVL43:
+ 652              		.loc 1 517 10 view .LVU123
+ 653 0016 2060     		str	r0, [r4]
+ 518:Core/Src/dynamixel.c **** }
+ 654              		.loc 1 518 1 view .LVU124
+ 655              		@ sp needed
+ 656              	.LVL44:
+ 657              		.loc 1 518 1 view .LVU125
+ 658 0018 10BD     		pop	{r4, pc}
+ 659              	.L47:
+ 660 001a C046     		.align	2
+ 661              	.L46:
+ 662 001c 00000000 		.word	.LANCHOR7
+ 663 0020 00002041 		.word	1092616192
+ 664              		.cfi_endproc
+ 665              	.LFE78:
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 22
+
+
+ 667              		.section	.text.dxl_makeword,"ax",%progbits
+ 668              		.align	1
+ 669              		.global	dxl_makeword
+ 670              		.syntax unified
+ 671              		.code	16
+ 672              		.thumb_func
+ 673              		.fpu softvfp
+ 675              	dxl_makeword:
+ 676              	.LVL45:
+ 677              	.LFB51:
+ 200:Core/Src/dynamixel.c ****     return (highbyte & 0xFF) << 8 | (lowbyte & 0xFF);
+ 678              		.loc 1 200 1 is_stmt 1 view -0
+ 679              		.cfi_startproc
+ 680              		@ args = 0, pretend = 0, frame = 0
+ 681              		@ frame_needed = 0, uses_anonymous_args = 0
+ 682              		@ link register save eliminated.
+ 201:Core/Src/dynamixel.c **** }
+ 683              		.loc 1 201 5 view .LVU127
+ 201:Core/Src/dynamixel.c **** }
+ 684              		.loc 1 201 30 is_stmt 0 view .LVU128
+ 685 0000 0906     		lsls	r1, r1, #24
+ 686              	.LVL46:
+ 201:Core/Src/dynamixel.c **** }
+ 687              		.loc 1 201 30 view .LVU129
+ 688 0002 090C     		lsrs	r1, r1, #16
+ 201:Core/Src/dynamixel.c **** }
+ 689              		.loc 1 201 46 view .LVU130
+ 690 0004 FF23     		movs	r3, #255
+ 691 0006 1840     		ands	r0, r3
+ 692              	.LVL47:
+ 201:Core/Src/dynamixel.c **** }
+ 693              		.loc 1 201 35 view .LVU131
+ 694 0008 0843     		orrs	r0, r1
+ 202:Core/Src/dynamixel.c **** 
+ 695              		.loc 1 202 1 view .LVU132
+ 696              		@ sp needed
+ 697 000a 7047     		bx	lr
+ 698              		.cfi_endproc
+ 699              	.LFE51:
+ 701              		.section	.text.read_word_callback,"ax",%progbits
+ 702              		.align	1
+ 703              		.syntax unified
+ 704              		.code	16
+ 705              		.thumb_func
+ 706              		.fpu softvfp
+ 708              	read_word_callback:
+ 709              	.LFB71:
+ 435:Core/Src/dynamixel.c ****     *read_value = dxl_makeword(dxl_get_parameter(0), dxl_get_parameter(1));
+ 710              		.loc 1 435 1 is_stmt 1 view -0
+ 711              		.cfi_startproc
+ 712              		@ args = 0, pretend = 0, frame = 0
+ 713              		@ frame_needed = 0, uses_anonymous_args = 0
+ 714 0000 10B5     		push	{r4, lr}
+ 715              	.LCFI9:
+ 716              		.cfi_def_cfa_offset 8
+ 717              		.cfi_offset 4, -8
+ 718              		.cfi_offset 14, -4
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 23
+
+
+ 436:Core/Src/dynamixel.c **** }
+ 719              		.loc 1 436 5 view .LVU134
+ 436:Core/Src/dynamixel.c **** }
+ 720              		.loc 1 436 19 is_stmt 0 view .LVU135
+ 721 0002 0020     		movs	r0, #0
+ 722 0004 FFF7FEFF 		bl	dxl_get_parameter
+ 723              	.LVL48:
+ 724 0008 0400     		movs	r4, r0
+ 725 000a 0120     		movs	r0, #1
+ 726 000c FFF7FEFF 		bl	dxl_get_parameter
+ 727              	.LVL49:
+ 728 0010 0100     		movs	r1, r0
+ 729 0012 2000     		movs	r0, r4
+ 730 0014 FFF7FEFF 		bl	dxl_makeword
+ 731              	.LVL50:
+ 436:Core/Src/dynamixel.c **** }
+ 732              		.loc 1 436 5 view .LVU136
+ 733 0018 014B     		ldr	r3, .L50
+ 734 001a 1B68     		ldr	r3, [r3]
+ 436:Core/Src/dynamixel.c **** }
+ 735              		.loc 1 436 17 view .LVU137
+ 736 001c 1860     		str	r0, [r3]
+ 437:Core/Src/dynamixel.c **** 
+ 737              		.loc 1 437 1 view .LVU138
+ 738              		@ sp needed
+ 739 001e 10BD     		pop	{r4, pc}
+ 740              	.L51:
+ 741              		.align	2
+ 742              	.L50:
+ 743 0020 00000000 		.word	.LANCHOR7
+ 744              		.cfi_endproc
+ 745              	.LFE71:
+ 747              		.global	__aeabi_uidiv
+ 748              		.section	.text.read_byte_callback_goal_position,"ax",%progbits
+ 749              		.align	1
+ 750              		.syntax unified
+ 751              		.code	16
+ 752              		.thumb_func
+ 753              		.fpu softvfp
+ 755              	read_byte_callback_goal_position:
+ 756              	.LFB75:
+ 495:Core/Src/dynamixel.c ****     const unsigned word = dxl_makeword(dxl_get_parameter(0), dxl_get_parameter(1));
+ 757              		.loc 1 495 1 is_stmt 1 view -0
+ 758              		.cfi_startproc
+ 759              		@ args = 0, pretend = 0, frame = 0
+ 760              		@ frame_needed = 0, uses_anonymous_args = 0
+ 761 0000 10B5     		push	{r4, lr}
+ 762              	.LCFI10:
+ 763              		.cfi_def_cfa_offset 8
+ 764              		.cfi_offset 4, -8
+ 765              		.cfi_offset 14, -4
+ 496:Core/Src/dynamixel.c ****     *read_value = word / 1023 * 300;
+ 766              		.loc 1 496 5 view .LVU140
+ 496:Core/Src/dynamixel.c ****     *read_value = word / 1023 * 300;
+ 767              		.loc 1 496 27 is_stmt 0 view .LVU141
+ 768 0002 0020     		movs	r0, #0
+ 769 0004 FFF7FEFF 		bl	dxl_get_parameter
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 24
+
+
+ 770              	.LVL51:
+ 771 0008 0400     		movs	r4, r0
+ 772 000a 0120     		movs	r0, #1
+ 773 000c FFF7FEFF 		bl	dxl_get_parameter
+ 774              	.LVL52:
+ 775 0010 0100     		movs	r1, r0
+ 776 0012 2000     		movs	r0, r4
+ 777 0014 FFF7FEFF 		bl	dxl_makeword
+ 778              	.LVL53:
+ 497:Core/Src/dynamixel.c **** }
+ 779              		.loc 1 497 5 is_stmt 1 view .LVU142
+ 497:Core/Src/dynamixel.c **** }
+ 780              		.loc 1 497 24 is_stmt 0 view .LVU143
+ 781 0018 0649     		ldr	r1, .L53
+ 782 001a FFF7FEFF 		bl	__aeabi_uidiv
+ 783              	.LVL54:
+ 497:Core/Src/dynamixel.c **** }
+ 784              		.loc 1 497 24 view .LVU144
+ 785 001e 0300     		movs	r3, r0
+ 497:Core/Src/dynamixel.c **** }
+ 786              		.loc 1 497 5 view .LVU145
+ 787 0020 054A     		ldr	r2, .L53+4
+ 788 0022 1268     		ldr	r2, [r2]
+ 497:Core/Src/dynamixel.c **** }
+ 789              		.loc 1 497 31 view .LVU146
+ 790 0024 8000     		lsls	r0, r0, #2
+ 791 0026 C318     		adds	r3, r0, r3
+ 792 0028 1801     		lsls	r0, r3, #4
+ 793 002a C01A     		subs	r0, r0, r3
+ 794 002c 8000     		lsls	r0, r0, #2
+ 497:Core/Src/dynamixel.c **** }
+ 795              		.loc 1 497 17 view .LVU147
+ 796 002e 1060     		str	r0, [r2]
+ 498:Core/Src/dynamixel.c **** 
+ 797              		.loc 1 498 1 view .LVU148
+ 798              		@ sp needed
+ 799 0030 10BD     		pop	{r4, pc}
+ 800              	.L54:
+ 801 0032 C046     		.align	2
+ 802              	.L53:
+ 803 0034 FF030000 		.word	1023
+ 804 0038 00000000 		.word	.LANCHOR7
+ 805              		.cfi_endproc
+ 806              	.LFE75:
+ 808              		.section	.text.dxl_get_lowbyte,"ax",%progbits
+ 809              		.align	1
+ 810              		.global	dxl_get_lowbyte
+ 811              		.syntax unified
+ 812              		.code	16
+ 813              		.thumb_func
+ 814              		.fpu softvfp
+ 816              	dxl_get_lowbyte:
+ 817              	.LVL55:
+ 818              	.LFB52:
+ 205:Core/Src/dynamixel.c ****     return word & 0xFF;
+ 819              		.loc 1 205 1 is_stmt 1 view -0
+ 820              		.cfi_startproc
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 25
+
+
+ 821              		@ args = 0, pretend = 0, frame = 0
+ 822              		@ frame_needed = 0, uses_anonymous_args = 0
+ 823              		@ link register save eliminated.
+ 206:Core/Src/dynamixel.c **** }
+ 824              		.loc 1 206 5 view .LVU150
+ 206:Core/Src/dynamixel.c **** }
+ 825              		.loc 1 206 17 is_stmt 0 view .LVU151
+ 826 0000 FF23     		movs	r3, #255
+ 827 0002 1840     		ands	r0, r3
+ 828              	.LVL56:
+ 207:Core/Src/dynamixel.c **** 
+ 829              		.loc 1 207 1 view .LVU152
+ 830              		@ sp needed
+ 831 0004 7047     		bx	lr
+ 832              		.cfi_endproc
+ 833              	.LFE52:
+ 835              		.section	.text.dxl_get_highbyte,"ax",%progbits
+ 836              		.align	1
+ 837              		.global	dxl_get_highbyte
+ 838              		.syntax unified
+ 839              		.code	16
+ 840              		.thumb_func
+ 841              		.fpu softvfp
+ 843              	dxl_get_highbyte:
+ 844              	.LVL57:
+ 845              	.LFB53:
+ 210:Core/Src/dynamixel.c ****     return (word & 0xFF00) >> 8;
+ 846              		.loc 1 210 1 is_stmt 1 view -0
+ 847              		.cfi_startproc
+ 848              		@ args = 0, pretend = 0, frame = 0
+ 849              		@ frame_needed = 0, uses_anonymous_args = 0
+ 850              		@ link register save eliminated.
+ 211:Core/Src/dynamixel.c **** }
+ 851              		.loc 1 211 5 view .LVU154
+ 211:Core/Src/dynamixel.c **** }
+ 852              		.loc 1 211 28 is_stmt 0 view .LVU155
+ 853 0000 0312     		asrs	r3, r0, #8
+ 854 0002 FF20     		movs	r0, #255
+ 855              	.LVL58:
+ 211:Core/Src/dynamixel.c **** }
+ 856              		.loc 1 211 28 view .LVU156
+ 857 0004 1840     		ands	r0, r3
+ 212:Core/Src/dynamixel.c **** 
+ 858              		.loc 1 212 1 view .LVU157
+ 859              		@ sp needed
+ 860 0006 7047     		bx	lr
+ 861              		.cfi_endproc
+ 862              	.LFE53:
+ 864              		.section	.text.dxl_initialize,"ax",%progbits
+ 865              		.align	1
+ 866              		.global	dxl_initialize
+ 867              		.syntax unified
+ 868              		.code	16
+ 869              		.thumb_func
+ 870              		.fpu softvfp
+ 872              	dxl_initialize:
+ 873              	.LVL59:
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 26
+
+
+ 874              	.LFB54:
+ 217:Core/Src/dynamixel.c ****     if (dxl_hal_open(huart, baudrate) != HAL_OK)
+ 875              		.loc 1 217 1 is_stmt 1 view -0
+ 876              		.cfi_startproc
+ 877              		@ args = 0, pretend = 0, frame = 0
+ 878              		@ frame_needed = 0, uses_anonymous_args = 0
+ 217:Core/Src/dynamixel.c ****     if (dxl_hal_open(huart, baudrate) != HAL_OK)
+ 879              		.loc 1 217 1 is_stmt 0 view .LVU159
+ 880 0000 10B5     		push	{r4, lr}
+ 881              	.LCFI11:
+ 882              		.cfi_def_cfa_offset 8
+ 883              		.cfi_offset 4, -8
+ 884              		.cfi_offset 14, -4
+ 218:Core/Src/dynamixel.c ****         return DXL_FAIL;
+ 885              		.loc 1 218 5 is_stmt 1 view .LVU160
+ 218:Core/Src/dynamixel.c ****         return DXL_FAIL;
+ 886              		.loc 1 218 9 is_stmt 0 view .LVU161
+ 887 0002 FFF7FEFF 		bl	dxl_hal_open
+ 888              	.LVL60:
+ 218:Core/Src/dynamixel.c ****         return DXL_FAIL;
+ 889              		.loc 1 218 8 view .LVU162
+ 890 0006 0028     		cmp	r0, #0
+ 891 0008 01D1     		bne	.L59
+ 224:Core/Src/dynamixel.c **** }
+ 892              		.loc 1 224 12 view .LVU163
+ 893 000a 0A30     		adds	r0, r0, #10
+ 894              	.L57:
+ 225:Core/Src/dynamixel.c **** 
+ 895              		.loc 1 225 1 view .LVU164
+ 896              		@ sp needed
+ 897 000c 10BD     		pop	{r4, pc}
+ 898              	.L59:
+ 219:Core/Src/dynamixel.c **** 
+ 899              		.loc 1 219 16 view .LVU165
+ 900 000e 0B20     		movs	r0, #11
+ 901 0010 FCE7     		b	.L57
+ 902              		.cfi_endproc
+ 903              	.LFE54:
+ 905              		.section	.text.dxl_terminate,"ax",%progbits
+ 906              		.align	1
+ 907              		.global	dxl_terminate
+ 908              		.syntax unified
+ 909              		.code	16
+ 910              		.thumb_func
+ 911              		.fpu softvfp
+ 913              	dxl_terminate:
+ 914              	.LFB55:
+ 229:Core/Src/dynamixel.c ****     LOCK_DEINIT;
+ 915              		.loc 1 229 1 is_stmt 1 view -0
+ 916              		.cfi_startproc
+ 917              		@ args = 0, pretend = 0, frame = 0
+ 918              		@ frame_needed = 0, uses_anonymous_args = 0
+ 919 0000 10B5     		push	{r4, lr}
+ 920              	.LCFI12:
+ 921              		.cfi_def_cfa_offset 8
+ 922              		.cfi_offset 4, -8
+ 923              		.cfi_offset 14, -4
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 27
+
+
+ 230:Core/Src/dynamixel.c ****     dxl_hal_close();
+ 924              		.loc 1 230 16 view .LVU167
+ 231:Core/Src/dynamixel.c **** }
+ 925              		.loc 1 231 5 view .LVU168
+ 926 0002 FFF7FEFF 		bl	dxl_hal_close
+ 927              	.LVL61:
+ 232:Core/Src/dynamixel.c **** 
+ 928              		.loc 1 232 1 is_stmt 0 view .LVU169
+ 929              		@ sp needed
+ 930 0006 10BD     		pop	{r4, pc}
+ 931              		.cfi_endproc
+ 932              	.LFE55:
+ 934              		.section	.text.dxl_set_baudrate,"ax",%progbits
+ 935              		.align	1
+ 936              		.global	dxl_set_baudrate
+ 937              		.syntax unified
+ 938              		.code	16
+ 939              		.thumb_func
+ 940              		.fpu softvfp
+ 942              	dxl_set_baudrate:
+ 943              	.LVL62:
+ 944              	.LFB56:
+ 235:Core/Src/dynamixel.c ****     return dxl_hal_set_baudrate(baudrate) == HAL_OK;
+ 945              		.loc 1 235 1 is_stmt 1 view -0
+ 946              		.cfi_startproc
+ 947              		@ args = 0, pretend = 0, frame = 0
+ 948              		@ frame_needed = 0, uses_anonymous_args = 0
+ 235:Core/Src/dynamixel.c ****     return dxl_hal_set_baudrate(baudrate) == HAL_OK;
+ 949              		.loc 1 235 1 is_stmt 0 view .LVU171
+ 950 0000 10B5     		push	{r4, lr}
+ 951              	.LCFI13:
+ 952              		.cfi_def_cfa_offset 8
+ 953              		.cfi_offset 4, -8
+ 954              		.cfi_offset 14, -4
+ 236:Core/Src/dynamixel.c **** }
+ 955              		.loc 1 236 5 is_stmt 1 view .LVU172
+ 236:Core/Src/dynamixel.c **** }
+ 956              		.loc 1 236 12 is_stmt 0 view .LVU173
+ 957 0002 FFF7FEFF 		bl	dxl_hal_set_baudrate
+ 958              	.LVL63:
+ 236:Core/Src/dynamixel.c **** }
+ 959              		.loc 1 236 43 view .LVU174
+ 960 0006 4342     		rsbs	r3, r0, #0
+ 961 0008 5841     		adcs	r0, r0, r3
+ 237:Core/Src/dynamixel.c **** 
+ 962              		.loc 1 237 1 view .LVU175
+ 963              		@ sp needed
+ 964 000a 10BD     		pop	{r4, pc}
+ 965              		.cfi_endproc
+ 966              	.LFE56:
+ 968              		.section	.text.dxl_set_id,"ax",%progbits
+ 969              		.align	1
+ 970              		.global	dxl_set_id
+ 971              		.syntax unified
+ 972              		.code	16
+ 973              		.thumb_func
+ 974              		.fpu softvfp
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 28
+
+
+ 976              	dxl_set_id:
+ 977              	.LVL64:
+ 978              	.LFB57:
+ 240:Core/Src/dynamixel.c ****  //   ASSERT(id <= 253 || id == 255);
+ 979              		.loc 1 240 1 is_stmt 1 view -0
+ 980              		.cfi_startproc
+ 981              		@ args = 0, pretend = 0, frame = 0
+ 982              		@ frame_needed = 0, uses_anonymous_args = 0
+ 983              		@ link register save eliminated.
+ 242:Core/Src/dynamixel.c **** }
+ 984              		.loc 1 242 5 view .LVU177
+ 242:Core/Src/dynamixel.c **** }
+ 985              		.loc 1 242 28 is_stmt 0 view .LVU178
+ 986 0000 014B     		ldr	r3, .L63
+ 987 0002 9870     		strb	r0, [r3, #2]
+ 243:Core/Src/dynamixel.c **** 
+ 988              		.loc 1 243 1 view .LVU179
+ 989              		@ sp needed
+ 990 0004 7047     		bx	lr
+ 991              	.L64:
+ 992 0006 C046     		.align	2
+ 993              	.L63:
+ 994 0008 00000000 		.word	instruction_packet
+ 995              		.cfi_endproc
+ 996              	.LFE57:
+ 998              		.section	.text.dxl_set_instruction,"ax",%progbits
+ 999              		.align	1
+ 1000              		.global	dxl_set_instruction
+ 1001              		.syntax unified
+ 1002              		.code	16
+ 1003              		.thumb_func
+ 1004              		.fpu softvfp
+ 1006              	dxl_set_instruction:
+ 1007              	.LVL65:
+ 1008              	.LFB58:
+ 246:Core/Src/dynamixel.c ****     //ASSERT(instruction < 0xFF);
+ 1009              		.loc 1 246 1 is_stmt 1 view -0
+ 1010              		.cfi_startproc
+ 1011              		@ args = 0, pretend = 0, frame = 0
+ 1012              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1013              		@ link register save eliminated.
+ 248:Core/Src/dynamixel.c **** }
+ 1014              		.loc 1 248 5 view .LVU181
+ 248:Core/Src/dynamixel.c **** }
+ 1015              		.loc 1 248 37 is_stmt 0 view .LVU182
+ 1016 0000 014B     		ldr	r3, .L66
+ 1017 0002 1871     		strb	r0, [r3, #4]
+ 249:Core/Src/dynamixel.c **** 
+ 1018              		.loc 1 249 1 view .LVU183
+ 1019              		@ sp needed
+ 1020 0004 7047     		bx	lr
+ 1021              	.L67:
+ 1022 0006 C046     		.align	2
+ 1023              	.L66:
+ 1024 0008 00000000 		.word	instruction_packet
+ 1025              		.cfi_endproc
+ 1026              	.LFE58:
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 29
+
+
+ 1028              		.section	.text.dxl_set_parameter,"ax",%progbits
+ 1029              		.align	1
+ 1030              		.global	dxl_set_parameter
+ 1031              		.syntax unified
+ 1032              		.code	16
+ 1033              		.thumb_func
+ 1034              		.fpu softvfp
+ 1036              	dxl_set_parameter:
+ 1037              	.LVL66:
+ 1038              	.LFB59:
+ 252:Core/Src/dynamixel.c ****     //ASSERT(value < 0xFF);
+ 1039              		.loc 1 252 1 is_stmt 1 view -0
+ 1040              		.cfi_startproc
+ 1041              		@ args = 0, pretend = 0, frame = 0
+ 1042              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1043              		@ link register save eliminated.
+ 254:Core/Src/dynamixel.c **** }
+ 1044              		.loc 1 254 5 view .LVU185
+ 254:Core/Src/dynamixel.c **** }
+ 1045              		.loc 1 254 34 is_stmt 0 view .LVU186
+ 1046 0000 0530     		adds	r0, r0, #5
+ 1047              	.LVL67:
+ 254:Core/Src/dynamixel.c **** }
+ 1048              		.loc 1 254 43 view .LVU187
+ 1049 0002 014B     		ldr	r3, .L69
+ 1050 0004 1954     		strb	r1, [r3, r0]
+ 255:Core/Src/dynamixel.c **** 
+ 1051              		.loc 1 255 1 view .LVU188
+ 1052              		@ sp needed
+ 1053 0006 7047     		bx	lr
+ 1054              	.L70:
+ 1055              		.align	2
+ 1056              	.L69:
+ 1057 0008 00000000 		.word	instruction_packet
+ 1058              		.cfi_endproc
+ 1059              	.LFE59:
+ 1061              		.section	.text.dxl_set_length,"ax",%progbits
+ 1062              		.align	1
+ 1063              		.global	dxl_set_length
+ 1064              		.syntax unified
+ 1065              		.code	16
+ 1066              		.thumb_func
+ 1067              		.fpu softvfp
+ 1069              	dxl_set_length:
+ 1070              	.LVL68:
+ 1071              	.LFB60:
+ 258:Core/Src/dynamixel.c ****     //ASSERT(length <= MAXNUM_TXPARAM + 2);
+ 1072              		.loc 1 258 1 is_stmt 1 view -0
+ 1073              		.cfi_startproc
+ 1074              		@ args = 0, pretend = 0, frame = 0
+ 1075              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1076              		@ link register save eliminated.
+ 260:Core/Src/dynamixel.c **** }
+ 1077              		.loc 1 260 5 view .LVU190
+ 260:Core/Src/dynamixel.c **** }
+ 1078              		.loc 1 260 32 is_stmt 0 view .LVU191
+ 1079 0000 014B     		ldr	r3, .L72
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 30
+
+
+ 1080 0002 D870     		strb	r0, [r3, #3]
+ 261:Core/Src/dynamixel.c **** 
+ 1081              		.loc 1 261 1 view .LVU192
+ 1082              		@ sp needed
+ 1083 0004 7047     		bx	lr
+ 1084              	.L73:
+ 1085 0006 C046     		.align	2
+ 1086              	.L72:
+ 1087 0008 00000000 		.word	instruction_packet
+ 1088              		.cfi_endproc
+ 1089              	.LFE60:
+ 1091              		.section	.text.dxl_get_length,"ax",%progbits
+ 1092              		.align	1
+ 1093              		.global	dxl_get_length
+ 1094              		.syntax unified
+ 1095              		.code	16
+ 1096              		.thumb_func
+ 1097              		.fpu softvfp
+ 1099              	dxl_get_length:
+ 1100              	.LFB61:
+ 264:Core/Src/dynamixel.c ****     // parameter length = length - 2 (error and checksum)
+ 1101              		.loc 1 264 1 is_stmt 1 view -0
+ 1102              		.cfi_startproc
+ 1103              		@ args = 0, pretend = 0, frame = 0
+ 1104              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1105              		@ link register save eliminated.
+ 266:Core/Src/dynamixel.c **** }
+ 1106              		.loc 1 266 5 view .LVU194
+ 266:Core/Src/dynamixel.c **** }
+ 1107              		.loc 1 266 25 is_stmt 0 view .LVU195
+ 1108 0000 014B     		ldr	r3, .L75
+ 1109 0002 D878     		ldrb	r0, [r3, #3]
+ 266:Core/Src/dynamixel.c **** }
+ 1110              		.loc 1 266 34 view .LVU196
+ 1111 0004 0238     		subs	r0, r0, #2
+ 267:Core/Src/dynamixel.c **** 
+ 1112              		.loc 1 267 1 view .LVU197
+ 1113              		@ sp needed
+ 1114 0006 7047     		bx	lr
+ 1115              	.L76:
+ 1116              		.align	2
+ 1117              	.L75:
+ 1118 0008 00000000 		.word	.LANCHOR1
+ 1119              		.cfi_endproc
+ 1120              	.LFE61:
+ 1122              		.section	.text.dxl_get_error,"ax",%progbits
+ 1123              		.align	1
+ 1124              		.global	dxl_get_error
+ 1125              		.syntax unified
+ 1126              		.code	16
+ 1127              		.thumb_func
+ 1128              		.fpu softvfp
+ 1130              	dxl_get_error:
+ 1131              	.LFB62:
+ 271:Core/Src/dynamixel.c ****     return status_packet[ERRBIT];
+ 1132              		.loc 1 271 1 is_stmt 1 view -0
+ 1133              		.cfi_startproc
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 31
+
+
+ 1134              		@ args = 0, pretend = 0, frame = 0
+ 1135              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1136              		@ link register save eliminated.
+ 272:Core/Src/dynamixel.c **** }
+ 1137              		.loc 1 272 5 view .LVU199
+ 272:Core/Src/dynamixel.c **** }
+ 1138              		.loc 1 272 25 is_stmt 0 view .LVU200
+ 1139 0000 014B     		ldr	r3, .L78
+ 1140 0002 1879     		ldrb	r0, [r3, #4]
+ 273:Core/Src/dynamixel.c **** 
+ 1141              		.loc 1 273 1 view .LVU201
+ 1142              		@ sp needed
+ 1143 0004 7047     		bx	lr
+ 1144              	.L79:
+ 1145 0006 C046     		.align	2
+ 1146              	.L78:
+ 1147 0008 00000000 		.word	.LANCHOR1
+ 1148              		.cfi_endproc
+ 1149              	.LFE62:
+ 1151              		.section	.rodata.dxl_get_error_name.str1.4,"aMS",%progbits,1
+ 1152              		.align	2
+ 1153              	.LC30:
+ 1154 0000 44584C5F 		.ascii	"DXL_RXERROR\000"
+ 1154      52584552 
+ 1154      524F5200 
+ 1155              		.align	2
+ 1156              	.LC32:
+ 1157 000c 44584C5F 		.ascii	"DXL_TXBUSY\000"
+ 1157      54584255 
+ 1157      535900
+ 1158 0017 00       		.align	2
+ 1159              	.LC34:
+ 1160 0018 44584C5F 		.ascii	"DXL_RXBUSY\000"
+ 1160      52584255 
+ 1160      535900
+ 1161 0023 00       		.align	2
+ 1162              	.LC36:
+ 1163 0024 44584C5F 		.ascii	"DXL_TXTIMEOUT\000"
+ 1163      54585449 
+ 1163      4D454F55 
+ 1163      5400
+ 1164 0032 0000     		.align	2
+ 1165              	.LC38:
+ 1166 0034 44584C5F 		.ascii	"DXL_RXTIMEOUT\000"
+ 1166      52585449 
+ 1166      4D454F55 
+ 1166      5400
+ 1167 0042 0000     		.align	2
+ 1168              	.LC40:
+ 1169 0044 44584C5F 		.ascii	"DXL_TXFAIL\000"
+ 1169      54584641 
+ 1169      494C00
+ 1170 004f 00       		.align	2
+ 1171              	.LC42:
+ 1172 0050 44584C5F 		.ascii	"DXL_RXFAIL\000"
+ 1172      52584641 
+ 1172      494C00
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 32
+
+
+ 1173 005b 00       		.align	2
+ 1174              	.LC44:
+ 1175 005c 44584C5F 		.ascii	"DXL_TXCORRUPT\000"
+ 1175      5458434F 
+ 1175      52525550 
+ 1175      5400
+ 1176 006a 0000     		.align	2
+ 1177              	.LC46:
+ 1178 006c 44584C5F 		.ascii	"DXL_RXCORRUPT\000"
+ 1178      5258434F 
+ 1178      52525550 
+ 1178      5400
+ 1179 007a 0000     		.align	2
+ 1180              	.LC48:
+ 1181 007c 44584C5F 		.ascii	"DXL_SUCCESS\000"
+ 1181      53554343 
+ 1181      45535300 
+ 1182              		.align	2
+ 1183              	.LC50:
+ 1184 0088 44584C5F 		.ascii	"DXL_FAIL\000"
+ 1184      4641494C 
+ 1184      00
+ 1185 0091 000000   		.align	2
+ 1186              	.LC52:
+ 1187 0094 44584C5F 		.ascii	"DXL_BUSY\000"
+ 1187      42555359 
+ 1187      00
+ 1188 009d 000000   		.align	2
+ 1189              	.LC54:
+ 1190 00a0 44584C5F 		.ascii	"DXL_ERROR\000"
+ 1190      4552524F 
+ 1190      5200
+ 1191 00aa 0000     		.align	2
+ 1192              	.LC56:
+ 1193 00ac 44584C5F 		.ascii	"DXL_TXERROR\000"
+ 1193      54584552 
+ 1193      524F5200 
+ 1194              		.section	.text.dxl_get_error_name,"ax",%progbits
+ 1195              		.align	1
+ 1196              		.global	dxl_get_error_name
+ 1197              		.syntax unified
+ 1198              		.code	16
+ 1199              		.thumb_func
+ 1200              		.fpu softvfp
+ 1202              	dxl_get_error_name:
+ 1203              	.LVL69:
+ 1204              	.LFB63:
+ 277:Core/Src/dynamixel.c ****     switch (error)
+ 1205              		.loc 1 277 1 is_stmt 1 view -0
+ 1206              		.cfi_startproc
+ 1207              		@ args = 0, pretend = 0, frame = 0
+ 1208              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1209              		@ link register save eliminated.
+ 278:Core/Src/dynamixel.c ****     {
+ 1210              		.loc 1 278 5 view .LVU203
+ 1211 0000 0D28     		cmp	r0, #13
+ 1212 0002 1DD8     		bhi	.L81
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 33
+
+
+ 1213 0004 8000     		lsls	r0, r0, #2
+ 1214              	.LVL70:
+ 278:Core/Src/dynamixel.c ****     {
+ 1215              		.loc 1 278 5 is_stmt 0 view .LVU204
+ 1216 0006 104B     		ldr	r3, .L98
+ 1217 0008 1B58     		ldr	r3, [r3, r0]
+ 1218 000a 9F46     		mov	pc, r3
+ 1219              		.section	.rodata.dxl_get_error_name,"a",%progbits
+ 1220              		.align	2
+ 1221              	.L83:
+ 1222 0000 0C000000 		.word	.L96
+ 1223 0004 44000000 		.word	.L97
+ 1224 0008 10000000 		.word	.L94
+ 1225 000c 14000000 		.word	.L93
+ 1226 0010 18000000 		.word	.L92
+ 1227 0014 1C000000 		.word	.L91
+ 1228 0018 20000000 		.word	.L90
+ 1229 001c 24000000 		.word	.L89
+ 1230 0020 28000000 		.word	.L88
+ 1231 0024 2C000000 		.word	.L87
+ 1232 0028 30000000 		.word	.L86
+ 1233 002c 34000000 		.word	.L85
+ 1234 0030 38000000 		.word	.L84
+ 1235 0034 3C000000 		.word	.L82
+ 1236              		.section	.text.dxl_get_error_name
+ 1237              	.L96:
+ 301:Core/Src/dynamixel.c ****     }
+ 1238              		.loc 1 301 39 view .LVU205
+ 1239 000c 0F48     		ldr	r0, .L98+4
+ 1240              	.L80:
+ 307:Core/Src/dynamixel.c **** 
+ 1241              		.loc 1 307 1 view .LVU206
+ 1242              		@ sp needed
+ 1243 000e 7047     		bx	lr
+ 1244              	.L94:
+ 284:Core/Src/dynamixel.c ****         case DXL_RXBUSY:       return "DXL_RXBUSY";
+ 1245              		.loc 1 284 32 is_stmt 1 view .LVU207
+ 284:Core/Src/dynamixel.c ****         case DXL_RXBUSY:       return "DXL_RXBUSY";
+ 1246              		.loc 1 284 39 is_stmt 0 view .LVU208
+ 1247 0010 0F48     		ldr	r0, .L98+8
+ 1248 0012 FCE7     		b	.L80
+ 1249              	.L93:
+ 285:Core/Src/dynamixel.c **** 
+ 1250              		.loc 1 285 32 is_stmt 1 view .LVU209
+ 285:Core/Src/dynamixel.c **** 
+ 1251              		.loc 1 285 39 is_stmt 0 view .LVU210
+ 1252 0014 0F48     		ldr	r0, .L98+12
+ 1253 0016 FAE7     		b	.L80
+ 1254              	.L92:
+ 287:Core/Src/dynamixel.c ****         case DXL_RXTIMEOUT:    return "DXL_RXTIMEOUT";
+ 1255              		.loc 1 287 32 is_stmt 1 view .LVU211
+ 287:Core/Src/dynamixel.c ****         case DXL_RXTIMEOUT:    return "DXL_RXTIMEOUT";
+ 1256              		.loc 1 287 39 is_stmt 0 view .LVU212
+ 1257 0018 0F48     		ldr	r0, .L98+16
+ 1258 001a F8E7     		b	.L80
+ 1259              	.L91:
+ 288:Core/Src/dynamixel.c **** 
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 34
+
+
+ 1260              		.loc 1 288 32 is_stmt 1 view .LVU213
+ 288:Core/Src/dynamixel.c **** 
+ 1261              		.loc 1 288 39 is_stmt 0 view .LVU214
+ 1262 001c 0F48     		ldr	r0, .L98+20
+ 1263 001e F6E7     		b	.L80
+ 1264              	.L90:
+ 291:Core/Src/dynamixel.c ****         case DXL_RXFAIL:       return "DXL_RXFAIL";
+ 1265              		.loc 1 291 32 is_stmt 1 view .LVU215
+ 291:Core/Src/dynamixel.c ****         case DXL_RXFAIL:       return "DXL_RXFAIL";
+ 1266              		.loc 1 291 39 is_stmt 0 view .LVU216
+ 1267 0020 0F48     		ldr	r0, .L98+24
+ 1268 0022 F4E7     		b	.L80
+ 1269              	.L89:
+ 292:Core/Src/dynamixel.c **** 
+ 1270              		.loc 1 292 32 is_stmt 1 view .LVU217
+ 292:Core/Src/dynamixel.c **** 
+ 1271              		.loc 1 292 39 is_stmt 0 view .LVU218
+ 1272 0024 0F48     		ldr	r0, .L98+28
+ 1273 0026 F2E7     		b	.L80
+ 1274              	.L88:
+ 294:Core/Src/dynamixel.c ****         case DXL_RXCORRUPT:    return "DXL_RXCORRUPT";
+ 1275              		.loc 1 294 32 is_stmt 1 view .LVU219
+ 294:Core/Src/dynamixel.c ****         case DXL_RXCORRUPT:    return "DXL_RXCORRUPT";
+ 1276              		.loc 1 294 39 is_stmt 0 view .LVU220
+ 1277 0028 0F48     		ldr	r0, .L98+32
+ 1278 002a F0E7     		b	.L80
+ 1279              	.L87:
+ 295:Core/Src/dynamixel.c **** 
+ 1280              		.loc 1 295 32 is_stmt 1 view .LVU221
+ 295:Core/Src/dynamixel.c **** 
+ 1281              		.loc 1 295 39 is_stmt 0 view .LVU222
+ 1282 002c 0F48     		ldr	r0, .L98+36
+ 1283 002e EEE7     		b	.L80
+ 1284              	.L86:
+ 297:Core/Src/dynamixel.c ****         case DXL_FAIL:         return "DXL_FAIL";
+ 1285              		.loc 1 297 32 is_stmt 1 view .LVU223
+ 297:Core/Src/dynamixel.c ****         case DXL_FAIL:         return "DXL_FAIL";
+ 1286              		.loc 1 297 39 is_stmt 0 view .LVU224
+ 1287 0030 0F48     		ldr	r0, .L98+40
+ 1288 0032 ECE7     		b	.L80
+ 1289              	.L85:
+ 298:Core/Src/dynamixel.c **** 
+ 1290              		.loc 1 298 32 is_stmt 1 view .LVU225
+ 298:Core/Src/dynamixel.c **** 
+ 1291              		.loc 1 298 39 is_stmt 0 view .LVU226
+ 1292 0034 0F48     		ldr	r0, .L98+44
+ 1293 0036 EAE7     		b	.L80
+ 1294              	.L84:
+ 300:Core/Src/dynamixel.c ****         case DXL_ERROR:        return "DXL_ERROR";
+ 1295              		.loc 1 300 32 is_stmt 1 view .LVU227
+ 300:Core/Src/dynamixel.c ****         case DXL_ERROR:        return "DXL_ERROR";
+ 1296              		.loc 1 300 39 is_stmt 0 view .LVU228
+ 1297 0038 0F48     		ldr	r0, .L98+48
+ 1298 003a E8E7     		b	.L80
+ 1299              	.L82:
+ 301:Core/Src/dynamixel.c ****     }
+ 1300              		.loc 1 301 32 is_stmt 1 view .LVU229
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 35
+
+
+ 301:Core/Src/dynamixel.c ****     }
+ 1301              		.loc 1 301 39 is_stmt 0 view .LVU230
+ 1302 003c 0F48     		ldr	r0, .L98+52
+ 1303 003e E6E7     		b	.L80
+ 1304              	.LVL71:
+ 1305              	.L81:
+ 306:Core/Src/dynamixel.c **** }
+ 1306              		.loc 1 306 5 is_stmt 1 view .LVU231
+ 306:Core/Src/dynamixel.c **** }
+ 1307              		.loc 1 306 12 is_stmt 0 view .LVU232
+ 1308 0040 0020     		movs	r0, #0
+ 1309              	.LVL72:
+ 306:Core/Src/dynamixel.c **** }
+ 1310              		.loc 1 306 12 view .LVU233
+ 1311 0042 E4E7     		b	.L80
+ 1312              	.L97:
+ 282:Core/Src/dynamixel.c **** 
+ 1313              		.loc 1 282 39 view .LVU234
+ 1314 0044 0E48     		ldr	r0, .L98+56
+ 1315 0046 E2E7     		b	.L80
+ 1316              	.L99:
+ 1317              		.align	2
+ 1318              	.L98:
+ 1319 0048 00000000 		.word	.L83
+ 1320 004c AC000000 		.word	.LC56
+ 1321 0050 0C000000 		.word	.LC32
+ 1322 0054 18000000 		.word	.LC34
+ 1323 0058 24000000 		.word	.LC36
+ 1324 005c 34000000 		.word	.LC38
+ 1325 0060 44000000 		.word	.LC40
+ 1326 0064 50000000 		.word	.LC42
+ 1327 0068 5C000000 		.word	.LC44
+ 1328 006c 6C000000 		.word	.LC46
+ 1329 0070 7C000000 		.word	.LC48
+ 1330 0074 88000000 		.word	.LC50
+ 1331 0078 94000000 		.word	.LC52
+ 1332 007c A0000000 		.word	.LC54
+ 1333 0080 00000000 		.word	.LC30
+ 1334              		.cfi_endproc
+ 1335              	.LFE63:
+ 1337              		.section	.text.dxl_is_busy,"ax",%progbits
+ 1338              		.align	1
+ 1339              		.global	dxl_is_busy
+ 1340              		.syntax unified
+ 1341              		.code	16
+ 1342              		.thumb_func
+ 1343              		.fpu softvfp
+ 1345              	dxl_is_busy:
+ 1346              	.LFB64:
+ 311:Core/Src/dynamixel.c ****     return busy;
+ 1347              		.loc 1 311 1 is_stmt 1 view -0
+ 1348              		.cfi_startproc
+ 1349              		@ args = 0, pretend = 0, frame = 0
+ 1350              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1351              		@ link register save eliminated.
+ 312:Core/Src/dynamixel.c **** }
+ 1352              		.loc 1 312 5 view .LVU236
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 36
+
+
+ 312:Core/Src/dynamixel.c **** }
+ 1353              		.loc 1 312 12 is_stmt 0 view .LVU237
+ 1354 0000 014B     		ldr	r3, .L101
+ 1355 0002 1868     		ldr	r0, [r3]
+ 313:Core/Src/dynamixel.c **** 
+ 1356              		.loc 1 313 1 view .LVU238
+ 1357              		@ sp needed
+ 1358 0004 7047     		bx	lr
+ 1359              	.L102:
+ 1360 0006 C046     		.align	2
+ 1361              	.L101:
+ 1362 0008 00000000 		.word	.LANCHOR4
+ 1363              		.cfi_endproc
+ 1364              	.LFE64:
+ 1366              		.section	.text.dxl_get_txrx_status,"ax",%progbits
+ 1367              		.align	1
+ 1368              		.global	dxl_get_txrx_status
+ 1369              		.syntax unified
+ 1370              		.code	16
+ 1371              		.thumb_func
+ 1372              		.fpu softvfp
+ 1374              	dxl_get_txrx_status:
+ 1375              	.LFB65:
+ 317:Core/Src/dynamixel.c ****     return status;
+ 1376              		.loc 1 317 1 is_stmt 1 view -0
+ 1377              		.cfi_startproc
+ 1378              		@ args = 0, pretend = 0, frame = 0
+ 1379              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1380              		@ link register save eliminated.
+ 318:Core/Src/dynamixel.c **** }
+ 1381              		.loc 1 318 5 view .LVU240
+ 318:Core/Src/dynamixel.c **** }
+ 1382              		.loc 1 318 12 is_stmt 0 view .LVU241
+ 1383 0000 014B     		ldr	r3, .L104
+ 1384 0002 1868     		ldr	r0, [r3]
+ 319:Core/Src/dynamixel.c **** 
+ 1385              		.loc 1 319 1 view .LVU242
+ 1386              		@ sp needed
+ 1387 0004 7047     		bx	lr
+ 1388              	.L105:
+ 1389 0006 C046     		.align	2
+ 1390              	.L104:
+ 1391 0008 00000000 		.word	.LANCHOR2
+ 1392              		.cfi_endproc
+ 1393              	.LFE65:
+ 1395              		.section	.text.dxl_process_status_packet,"ax",%progbits
+ 1396              		.align	1
+ 1397              		.global	dxl_process_status_packet
+ 1398              		.syntax unified
+ 1399              		.code	16
+ 1400              		.thumb_func
+ 1401              		.fpu softvfp
+ 1403              	dxl_process_status_packet:
+ 1404              	.LFB66:
+ 323:Core/Src/dynamixel.c ****     // if error in a previous call
+ 1405              		.loc 1 323 1 is_stmt 1 view -0
+ 1406              		.cfi_startproc
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 37
+
+
+ 1407              		@ args = 0, pretend = 0, frame = 0
+ 1408              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1409 0000 70B5     		push	{r4, r5, r6, lr}
+ 1410              	.LCFI14:
+ 1411              		.cfi_def_cfa_offset 16
+ 1412              		.cfi_offset 4, -16
+ 1413              		.cfi_offset 5, -12
+ 1414              		.cfi_offset 6, -8
+ 1415              		.cfi_offset 14, -4
+ 325:Core/Src/dynamixel.c ****         return;
+ 1416              		.loc 1 325 5 view .LVU244
+ 325:Core/Src/dynamixel.c ****         return;
+ 1417              		.loc 1 325 16 is_stmt 0 view .LVU245
+ 1418 0002 314B     		ldr	r3, .L118
+ 1419 0004 1B68     		ldr	r3, [r3]
+ 325:Core/Src/dynamixel.c ****         return;
+ 1420              		.loc 1 325 8 view .LVU246
+ 1421 0006 0A2B     		cmp	r3, #10
+ 1422 0008 44D1     		bne	.L106
+ 329:Core/Src/dynamixel.c ****     {
+ 1423              		.loc 1 329 5 is_stmt 1 view .LVU247
+ 329:Core/Src/dynamixel.c ****     {
+ 1424              		.loc 1 329 9 is_stmt 0 view .LVU248
+ 1425 000a 304B     		ldr	r3, .L118+4
+ 1426 000c 1B68     		ldr	r3, [r3]
+ 329:Core/Src/dynamixel.c ****     {
+ 1427              		.loc 1 329 8 view .LVU249
+ 1428 000e 002B     		cmp	r3, #0
+ 1429 0010 1AD0     		beq	.L108
+ 331:Core/Src/dynamixel.c **** 
+ 1430              		.loc 1 331 9 is_stmt 1 view .LVU250
+ 331:Core/Src/dynamixel.c **** 
+ 1431              		.loc 1 331 25 is_stmt 0 view .LVU251
+ 1432 0012 2E4B     		ldr	r3, .L118+4
+ 1433 0014 0022     		movs	r2, #0
+ 1434 0016 1A60     		str	r2, [r3]
+ 334:Core/Src/dynamixel.c **** 
+ 1435              		.loc 1 334 9 is_stmt 1 view .LVU252
+ 1436 0018 2D4B     		ldr	r3, .L118+8
+ 1437 001a 1B78     		ldrb	r3, [r3]
+ 1438 001c FF2B     		cmp	r3, #255
+ 1439 001e 03D1     		bne	.L109
+ 334:Core/Src/dynamixel.c **** 
+ 1440              		.loc 1 334 9 is_stmt 0 discriminator 2 view .LVU253
+ 1441 0020 2B4B     		ldr	r3, .L118+8
+ 1442 0022 5B78     		ldrb	r3, [r3, #1]
+ 1443 0024 FF2B     		cmp	r3, #255
+ 1444 0026 05D0     		beq	.L110
+ 1445              	.L109:
+ 334:Core/Src/dynamixel.c **** 
+ 1446              		.loc 1 334 9 is_stmt 1 discriminator 3 view .LVU254
+ 1447 0028 274B     		ldr	r3, .L118
+ 1448 002a 0922     		movs	r2, #9
+ 1449 002c 1A60     		str	r2, [r3]
+ 334:Core/Src/dynamixel.c **** 
+ 1450              		.loc 1 334 9 discriminator 3 view .LVU255
+ 1451 002e FFF7FEFF 		bl	dxl_abort
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 38
+
+
+ 1452              	.LVL73:
+ 334:Core/Src/dynamixel.c **** 
+ 1453              		.loc 1 334 9 discriminator 3 view .LVU256
+ 1454 0032 2FE0     		b	.L106
+ 1455              	.L110:
+ 337:Core/Src/dynamixel.c ****         ABORT_IF(status_packet[ERRBIT], status, DXL_ERROR)
+ 1456              		.loc 1 337 9 view .LVU257
+ 1457 0034 274B     		ldr	r3, .L118+12
+ 1458 0036 9A78     		ldrb	r2, [r3, #2]
+ 1459 0038 254B     		ldr	r3, .L118+8
+ 1460 003a 9B78     		ldrb	r3, [r3, #2]
+ 1461 003c 9A42     		cmp	r2, r3
+ 1462 003e 2AD1     		bne	.L115
+ 338:Core/Src/dynamixel.c ****     }
+ 1463              		.loc 1 338 9 view .LVU258
+ 1464 0040 234B     		ldr	r3, .L118+8
+ 1465 0042 1B79     		ldrb	r3, [r3, #4]
+ 1466 0044 002B     		cmp	r3, #0
+ 1467 0046 2CD1     		bne	.L116
+ 1468              	.L108:
+ 341:Core/Src/dynamixel.c ****     {
+ 1469              		.loc 1 341 5 view .LVU259
+ 341:Core/Src/dynamixel.c ****     {
+ 1470              		.loc 1 341 9 is_stmt 0 view .LVU260
+ 1471 0048 234B     		ldr	r3, .L118+16
+ 1472 004a 1B68     		ldr	r3, [r3]
+ 341:Core/Src/dynamixel.c ****     {
+ 1473              		.loc 1 341 8 view .LVU261
+ 1474 004c 002B     		cmp	r3, #0
+ 1475 004e 1DD0     		beq	.L112
+ 1476              	.LBB4:
+ 343:Core/Src/dynamixel.c **** 
+ 1477              		.loc 1 343 9 is_stmt 1 view .LVU262
+ 343:Core/Src/dynamixel.c **** 
+ 1478              		.loc 1 343 23 is_stmt 0 view .LVU263
+ 1479 0050 214B     		ldr	r3, .L118+16
+ 1480 0052 0022     		movs	r2, #0
+ 1481 0054 1A60     		str	r2, [r3]
+ 346:Core/Src/dynamixel.c **** 
+ 1482              		.loc 1 346 9 is_stmt 1 view .LVU264
+ 346:Core/Src/dynamixel.c **** 
+ 1483              		.loc 1 346 28 is_stmt 0 view .LVU265
+ 1484 0056 FFF7FEFF 		bl	dxl_get_length
+ 1485              	.LVL74:
+ 1486 005a 0400     		movs	r4, r0
+ 1487              	.LVL75:
+ 349:Core/Src/dynamixel.c ****         if (status_packet[PARAMETER + length] != check)
+ 1488              		.loc 1 349 9 is_stmt 1 view .LVU266
+ 349:Core/Src/dynamixel.c ****         if (status_packet[PARAMETER + length] != check)
+ 1489              		.loc 1 349 68 is_stmt 0 view .LVU267
+ 1490 005c C11C     		adds	r1, r0, #3
+ 349:Core/Src/dynamixel.c ****         if (status_packet[PARAMETER + length] != check)
+ 1491              		.loc 1 349 37 view .LVU268
+ 1492 005e 1C4D     		ldr	r5, .L118+8
+ 1493 0060 2800     		movs	r0, r5
+ 1494              	.LVL76:
+ 349:Core/Src/dynamixel.c ****         if (status_packet[PARAMETER + length] != check)
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 39
+
+
+ 1495              		.loc 1 349 37 view .LVU269
+ 1496 0062 FFF7FEFF 		bl	checksum
+ 1497              	.LVL77:
+ 350:Core/Src/dynamixel.c ****         	status = DXL_RXCORRUPT;
+ 1498              		.loc 1 350 9 is_stmt 1 view .LVU270
+ 350:Core/Src/dynamixel.c ****         	status = DXL_RXCORRUPT;
+ 1499              		.loc 1 350 37 is_stmt 0 view .LVU271
+ 1500 0066 0534     		adds	r4, r4, #5
+ 1501              	.LVL78:
+ 350:Core/Src/dynamixel.c ****         	status = DXL_RXCORRUPT;
+ 1502              		.loc 1 350 26 view .LVU272
+ 1503 0068 2B5D     		ldrb	r3, [r5, r4]
+ 350:Core/Src/dynamixel.c ****         	status = DXL_RXCORRUPT;
+ 1504              		.loc 1 350 12 view .LVU273
+ 1505 006a 8342     		cmp	r3, r0
+ 1506 006c 1FD0     		beq	.L113
+ 351:Core/Src/dynamixel.c ****         else if (read_callback)
+ 1507              		.loc 1 351 10 is_stmt 1 view .LVU274
+ 351:Core/Src/dynamixel.c ****         else if (read_callback)
+ 1508              		.loc 1 351 17 is_stmt 0 view .LVU275
+ 1509 006e 164B     		ldr	r3, .L118
+ 1510 0070 0922     		movs	r2, #9
+ 1511 0072 1A60     		str	r2, [r3]
+ 1512              	.LVL79:
+ 1513              	.L114:
+ 355:Core/Src/dynamixel.c **** 		read_value = NULL;
+ 1514              		.loc 1 355 3 is_stmt 1 view .LVU276
+ 355:Core/Src/dynamixel.c **** 		read_value = NULL;
+ 1515              		.loc 1 355 17 is_stmt 0 view .LVU277
+ 1516 0074 0023     		movs	r3, #0
+ 1517 0076 194A     		ldr	r2, .L118+20
+ 1518 0078 1360     		str	r3, [r2]
+ 356:Core/Src/dynamixel.c **** 
+ 1519              		.loc 1 356 3 is_stmt 1 view .LVU278
+ 356:Core/Src/dynamixel.c **** 
+ 1520              		.loc 1 356 14 is_stmt 0 view .LVU279
+ 1521 007a 194A     		ldr	r2, .L118+24
+ 1522 007c 1360     		str	r3, [r2]
+ 358:Core/Src/dynamixel.c ****         {
+ 1523              		.loc 1 358 9 is_stmt 1 view .LVU280
+ 358:Core/Src/dynamixel.c ****         {
+ 1524              		.loc 1 358 13 is_stmt 0 view .LVU281
+ 1525 007e 194B     		ldr	r3, .L118+28
+ 1526 0080 1B68     		ldr	r3, [r3]
+ 358:Core/Src/dynamixel.c ****         {
+ 1527              		.loc 1 358 12 view .LVU282
+ 1528 0082 002B     		cmp	r3, #0
+ 1529 0084 02D0     		beq	.L112
+ 360:Core/Src/dynamixel.c ****             UNLOCK;
+ 1530              		.loc 1 360 13 is_stmt 1 view .LVU283
+ 360:Core/Src/dynamixel.c ****             UNLOCK;
+ 1531              		.loc 1 360 18 is_stmt 0 view .LVU284
+ 1532 0086 174B     		ldr	r3, .L118+28
+ 1533 0088 0022     		movs	r2, #0
+ 1534 008a 1A60     		str	r2, [r3]
+ 1535              	.LVL80:
+ 1536              	.L112:
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 40
+
+
+ 361:Core/Src/dynamixel.c ****         }
+ 1537              		.loc 1 361 19 is_stmt 1 view .LVU285
+ 1538              	.LBE4:
+ 366:Core/Src/dynamixel.c **** }
+ 1539              		.loc 1 366 5 view .LVU286
+ 1540 008c FFF7FEFF 		bl	check_timeout
+ 1541              	.LVL81:
+ 1542 0090 0028     		cmp	r0, #0
+ 1543 0092 12D1     		bne	.L117
+ 1544              	.L106:
+ 367:Core/Src/dynamixel.c **** 
+ 1545              		.loc 1 367 1 is_stmt 0 view .LVU287
+ 1546              		@ sp needed
+ 1547 0094 70BD     		pop	{r4, r5, r6, pc}
+ 1548              	.L115:
+ 337:Core/Src/dynamixel.c ****         ABORT_IF(status_packet[ERRBIT], status, DXL_ERROR)
+ 1549              		.loc 1 337 9 is_stmt 1 discriminator 1 view .LVU288
+ 1550 0096 0C4B     		ldr	r3, .L118
+ 1551 0098 0922     		movs	r2, #9
+ 1552 009a 1A60     		str	r2, [r3]
+ 337:Core/Src/dynamixel.c ****         ABORT_IF(status_packet[ERRBIT], status, DXL_ERROR)
+ 1553              		.loc 1 337 9 discriminator 1 view .LVU289
+ 1554 009c FFF7FEFF 		bl	dxl_abort
+ 1555              	.LVL82:
+ 337:Core/Src/dynamixel.c ****         ABORT_IF(status_packet[ERRBIT], status, DXL_ERROR)
+ 1556              		.loc 1 337 9 discriminator 1 view .LVU290
+ 1557 00a0 F8E7     		b	.L106
+ 1558              	.L116:
+ 338:Core/Src/dynamixel.c ****     }
+ 1559              		.loc 1 338 9 discriminator 1 view .LVU291
+ 1560 00a2 094B     		ldr	r3, .L118
+ 1561 00a4 0D22     		movs	r2, #13
+ 1562 00a6 1A60     		str	r2, [r3]
+ 338:Core/Src/dynamixel.c ****     }
+ 1563              		.loc 1 338 9 discriminator 1 view .LVU292
+ 1564 00a8 FFF7FEFF 		bl	dxl_abort
+ 1565              	.LVL83:
+ 338:Core/Src/dynamixel.c ****     }
+ 1566              		.loc 1 338 9 discriminator 1 view .LVU293
+ 1567 00ac F2E7     		b	.L106
+ 1568              	.LVL84:
+ 1569              	.L113:
+ 1570              	.LBB5:
+ 352:Core/Src/dynamixel.c ****             (*read_callback)();
+ 1571              		.loc 1 352 14 view .LVU294
+ 352:Core/Src/dynamixel.c ****             (*read_callback)();
+ 1572              		.loc 1 352 18 is_stmt 0 view .LVU295
+ 1573 00ae 0B4B     		ldr	r3, .L118+20
+ 1574 00b0 1B68     		ldr	r3, [r3]
+ 352:Core/Src/dynamixel.c ****             (*read_callback)();
+ 1575              		.loc 1 352 17 view .LVU296
+ 1576 00b2 002B     		cmp	r3, #0
+ 1577 00b4 DED0     		beq	.L114
+ 353:Core/Src/dynamixel.c **** 
+ 1578              		.loc 1 353 13 is_stmt 1 view .LVU297
+ 353:Core/Src/dynamixel.c **** 
+ 1579              		.loc 1 353 14 is_stmt 0 view .LVU298
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 41
+
+
+ 1580 00b6 9847     		blx	r3
+ 1581              	.LVL85:
+ 353:Core/Src/dynamixel.c **** 
+ 1582              		.loc 1 353 14 view .LVU299
+ 1583 00b8 DCE7     		b	.L114
+ 1584              	.LVL86:
+ 1585              	.L117:
+ 353:Core/Src/dynamixel.c **** 
+ 1586              		.loc 1 353 14 view .LVU300
+ 1587              	.LBE5:
+ 366:Core/Src/dynamixel.c **** }
+ 1588              		.loc 1 366 5 is_stmt 1 discriminator 1 view .LVU301
+ 1589 00ba 034B     		ldr	r3, .L118
+ 1590 00bc 0522     		movs	r2, #5
+ 1591 00be 1A60     		str	r2, [r3]
+ 366:Core/Src/dynamixel.c **** }
+ 1592              		.loc 1 366 5 discriminator 1 view .LVU302
+ 1593 00c0 FFF7FEFF 		bl	dxl_abort
+ 1594              	.LVL87:
+ 366:Core/Src/dynamixel.c **** }
+ 1595              		.loc 1 366 5 discriminator 1 view .LVU303
+ 1596 00c4 E6E7     		b	.L106
+ 1597              	.L119:
+ 1598 00c6 C046     		.align	2
+ 1599              	.L118:
+ 1600 00c8 00000000 		.word	.LANCHOR2
+ 1601 00cc 00000000 		.word	.LANCHOR3
+ 1602 00d0 00000000 		.word	.LANCHOR1
+ 1603 00d4 00000000 		.word	instruction_packet
+ 1604 00d8 00000000 		.word	.LANCHOR0
+ 1605 00dc 00000000 		.word	.LANCHOR8
+ 1606 00e0 00000000 		.word	.LANCHOR7
+ 1607 00e4 00000000 		.word	.LANCHOR4
+ 1608              		.cfi_endproc
+ 1609              	.LFE66:
+ 1611              		.section	.text.dxl_ping,"ax",%progbits
+ 1612              		.align	1
+ 1613              		.global	dxl_ping
+ 1614              		.syntax unified
+ 1615              		.code	16
+ 1616              		.thumb_func
+ 1617              		.fpu softvfp
+ 1619              	dxl_ping:
+ 1620              	.LVL88:
+ 1621              	.LFB67:
+ 370:Core/Src/dynamixel.c ****     if (LOCK)
+ 1622              		.loc 1 370 1 view -0
+ 1623              		.cfi_startproc
+ 1624              		@ args = 0, pretend = 0, frame = 0
+ 1625              		@ frame_needed = 0, uses_anonymous_args = 0
+ 370:Core/Src/dynamixel.c ****     if (LOCK)
+ 1626              		.loc 1 370 1 is_stmt 0 view .LVU305
+ 1627 0000 10B5     		push	{r4, lr}
+ 1628              	.LCFI15:
+ 1629              		.cfi_def_cfa_offset 8
+ 1630              		.cfi_offset 4, -8
+ 1631              		.cfi_offset 14, -4
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 42
+
+
+ 371:Core/Src/dynamixel.c ****         return DXL_BUSY;
+ 1632              		.loc 1 371 5 is_stmt 1 view .LVU306
+ 373:Core/Src/dynamixel.c **** 
+ 1633              		.loc 1 373 5 view .LVU307
+ 373:Core/Src/dynamixel.c **** 
+ 1634              		.loc 1 373 10 is_stmt 0 view .LVU308
+ 1635 0002 074B     		ldr	r3, .L121
+ 1636 0004 0122     		movs	r2, #1
+ 1637 0006 1A60     		str	r2, [r3]
+ 375:Core/Src/dynamixel.c ****     dxl_set_instruction(INST_PING);
+ 1638              		.loc 1 375 5 is_stmt 1 view .LVU309
+ 1639 0008 FFF7FEFF 		bl	dxl_set_id
+ 1640              	.LVL89:
+ 376:Core/Src/dynamixel.c ****     dxl_set_length(2);
+ 1641              		.loc 1 376 5 view .LVU310
+ 1642 000c 0120     		movs	r0, #1
+ 1643 000e FFF7FEFF 		bl	dxl_set_instruction
+ 1644              	.LVL90:
+ 377:Core/Src/dynamixel.c **** 
+ 1645              		.loc 1 377 5 view .LVU311
+ 1646 0012 0220     		movs	r0, #2
+ 1647 0014 FFF7FEFF 		bl	dxl_set_length
+ 1648              	.LVL91:
+ 379:Core/Src/dynamixel.c **** }
+ 1649              		.loc 1 379 5 view .LVU312
+ 379:Core/Src/dynamixel.c **** }
+ 1650              		.loc 1 379 12 is_stmt 0 view .LVU313
+ 1651 0018 FFF7FEFF 		bl	dxl_txrx_packet
+ 1652              	.LVL92:
+ 380:Core/Src/dynamixel.c **** 
+ 1653              		.loc 1 380 1 view .LVU314
+ 1654              		@ sp needed
+ 1655 001c 10BD     		pop	{r4, pc}
+ 1656              	.L122:
+ 1657 001e C046     		.align	2
+ 1658              	.L121:
+ 1659 0020 00000000 		.word	.LANCHOR4
+ 1660              		.cfi_endproc
+ 1661              	.LFE67:
+ 1663              		.section	.text.dxl_read_byte,"ax",%progbits
+ 1664              		.align	1
+ 1665              		.global	dxl_read_byte
+ 1666              		.syntax unified
+ 1667              		.code	16
+ 1668              		.thumb_func
+ 1669              		.fpu softvfp
+ 1671              	dxl_read_byte:
+ 1672              	.LVL93:
+ 1673              	.LFB69:
+ 390:Core/Src/dynamixel.c ****     // ASSERT(0 <= address);
+ 1674              		.loc 1 390 1 is_stmt 1 view -0
+ 1675              		.cfi_startproc
+ 1676              		@ args = 0, pretend = 0, frame = 0
+ 1677              		@ frame_needed = 0, uses_anonymous_args = 0
+ 390:Core/Src/dynamixel.c ****     // ASSERT(0 <= address);
+ 1678              		.loc 1 390 1 is_stmt 0 view .LVU316
+ 1679 0000 70B5     		push	{r4, r5, r6, lr}
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 43
+
+
+ 1680              	.LCFI16:
+ 1681              		.cfi_def_cfa_offset 16
+ 1682              		.cfi_offset 4, -16
+ 1683              		.cfi_offset 5, -12
+ 1684              		.cfi_offset 6, -8
+ 1685              		.cfi_offset 14, -4
+ 1686 0002 0D00     		movs	r5, r1
+ 1687 0004 1400     		movs	r4, r2
+ 397:Core/Src/dynamixel.c ****         return DXL_BUSY;
+ 1688              		.loc 1 397 5 is_stmt 1 view .LVU317
+ 399:Core/Src/dynamixel.c **** 
+ 1689              		.loc 1 399 5 view .LVU318
+ 399:Core/Src/dynamixel.c **** 
+ 1690              		.loc 1 399 10 is_stmt 0 view .LVU319
+ 1691 0006 104B     		ldr	r3, .L126
+ 1692 0008 0122     		movs	r2, #1
+ 1693              	.LVL94:
+ 399:Core/Src/dynamixel.c **** 
+ 1694              		.loc 1 399 10 view .LVU320
+ 1695 000a 1A60     		str	r2, [r3]
+ 401:Core/Src/dynamixel.c ****     dxl_set_instruction(INST_READ);
+ 1696              		.loc 1 401 5 is_stmt 1 view .LVU321
+ 1697 000c FFF7FEFF 		bl	dxl_set_id
+ 1698              	.LVL95:
+ 402:Core/Src/dynamixel.c ****     dxl_set_parameter(0, address);
+ 1699              		.loc 1 402 5 view .LVU322
+ 1700 0010 0220     		movs	r0, #2
+ 1701 0012 FFF7FEFF 		bl	dxl_set_instruction
+ 1702              	.LVL96:
+ 403:Core/Src/dynamixel.c ****     dxl_set_parameter(1, DXL_BYTE);
+ 1703              		.loc 1 403 5 view .LVU323
+ 1704 0016 2900     		movs	r1, r5
+ 1705 0018 0020     		movs	r0, #0
+ 1706 001a FFF7FEFF 		bl	dxl_set_parameter
+ 1707              	.LVL97:
+ 404:Core/Src/dynamixel.c ****     dxl_set_length(2);
+ 1708              		.loc 1 404 5 view .LVU324
+ 1709 001e 0121     		movs	r1, #1
+ 1710 0020 0120     		movs	r0, #1
+ 1711 0022 FFF7FEFF 		bl	dxl_set_parameter
+ 1712              	.LVL98:
+ 405:Core/Src/dynamixel.c **** 
+ 1713              		.loc 1 405 5 view .LVU325
+ 1714 0026 0220     		movs	r0, #2
+ 1715 0028 FFF7FEFF 		bl	dxl_set_length
+ 1716              	.LVL99:
+ 407:Core/Src/dynamixel.c ****     if (read_callback == NULL)
+ 1717              		.loc 1 407 5 view .LVU326
+ 407:Core/Src/dynamixel.c ****     if (read_callback == NULL)
+ 1718              		.loc 1 407 16 is_stmt 0 view .LVU327
+ 1719 002c 074B     		ldr	r3, .L126+4
+ 1720 002e 1C60     		str	r4, [r3]
+ 408:Core/Src/dynamixel.c ****         read_callback = read_byte_callback;
+ 1721              		.loc 1 408 5 is_stmt 1 view .LVU328
+ 408:Core/Src/dynamixel.c ****         read_callback = read_byte_callback;
+ 1722              		.loc 1 408 23 is_stmt 0 view .LVU329
+ 1723 0030 074B     		ldr	r3, .L126+8
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 44
+
+
+ 1724 0032 1B68     		ldr	r3, [r3]
+ 408:Core/Src/dynamixel.c ****         read_callback = read_byte_callback;
+ 1725              		.loc 1 408 8 view .LVU330
+ 1726 0034 002B     		cmp	r3, #0
+ 1727 0036 02D0     		beq	.L125
+ 1728              	.L124:
+ 411:Core/Src/dynamixel.c **** }
+ 1729              		.loc 1 411 5 is_stmt 1 view .LVU331
+ 411:Core/Src/dynamixel.c **** }
+ 1730              		.loc 1 411 12 is_stmt 0 view .LVU332
+ 1731 0038 FFF7FEFF 		bl	dxl_txrx_packet
+ 1732              	.LVL100:
+ 412:Core/Src/dynamixel.c **** 
+ 1733              		.loc 1 412 1 view .LVU333
+ 1734              		@ sp needed
+ 1735              	.LVL101:
+ 1736              	.LVL102:
+ 412:Core/Src/dynamixel.c **** 
+ 1737              		.loc 1 412 1 view .LVU334
+ 1738 003c 70BD     		pop	{r4, r5, r6, pc}
+ 1739              	.LVL103:
+ 1740              	.L125:
+ 409:Core/Src/dynamixel.c **** 
+ 1741              		.loc 1 409 9 is_stmt 1 view .LVU335
+ 409:Core/Src/dynamixel.c **** 
+ 1742              		.loc 1 409 23 is_stmt 0 view .LVU336
+ 1743 003e 044B     		ldr	r3, .L126+8
+ 1744 0040 044A     		ldr	r2, .L126+12
+ 1745 0042 1A60     		str	r2, [r3]
+ 1746 0044 F8E7     		b	.L124
+ 1747              	.L127:
+ 1748 0046 C046     		.align	2
+ 1749              	.L126:
+ 1750 0048 00000000 		.word	.LANCHOR4
+ 1751 004c 00000000 		.word	.LANCHOR7
+ 1752 0050 00000000 		.word	.LANCHOR8
+ 1753 0054 00000000 		.word	read_byte_callback
+ 1754              		.cfi_endproc
+ 1755              	.LFE69:
+ 1757              		.section	.text.dxl_write_byte,"ax",%progbits
+ 1758              		.align	1
+ 1759              		.global	dxl_write_byte
+ 1760              		.syntax unified
+ 1761              		.code	16
+ 1762              		.thumb_func
+ 1763              		.fpu softvfp
+ 1765              	dxl_write_byte:
+ 1766              	.LVL104:
+ 1767              	.LFB70:
+ 416:Core/Src/dynamixel.c ****     // ASSERT(0 <= address);
+ 1768              		.loc 1 416 1 is_stmt 1 view -0
+ 1769              		.cfi_startproc
+ 1770              		@ args = 0, pretend = 0, frame = 0
+ 1771              		@ frame_needed = 0, uses_anonymous_args = 0
+ 416:Core/Src/dynamixel.c ****     // ASSERT(0 <= address);
+ 1772              		.loc 1 416 1 is_stmt 0 view .LVU338
+ 1773 0000 70B5     		push	{r4, r5, r6, lr}
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 45
+
+
+ 1774              	.LCFI17:
+ 1775              		.cfi_def_cfa_offset 16
+ 1776              		.cfi_offset 4, -16
+ 1777              		.cfi_offset 5, -12
+ 1778              		.cfi_offset 6, -8
+ 1779              		.cfi_offset 14, -4
+ 1780 0002 0D00     		movs	r5, r1
+ 1781 0004 1400     		movs	r4, r2
+ 421:Core/Src/dynamixel.c ****         return DXL_BUSY;
+ 1782              		.loc 1 421 5 is_stmt 1 view .LVU339
+ 423:Core/Src/dynamixel.c **** 
+ 1783              		.loc 1 423 5 view .LVU340
+ 423:Core/Src/dynamixel.c **** 
+ 1784              		.loc 1 423 10 is_stmt 0 view .LVU341
+ 1785 0006 0B4B     		ldr	r3, .L129
+ 1786 0008 0122     		movs	r2, #1
+ 1787              	.LVL105:
+ 423:Core/Src/dynamixel.c **** 
+ 1788              		.loc 1 423 10 view .LVU342
+ 1789 000a 1A60     		str	r2, [r3]
+ 425:Core/Src/dynamixel.c ****     dxl_set_instruction(INST_WRITE);
+ 1790              		.loc 1 425 5 is_stmt 1 view .LVU343
+ 1791 000c FFF7FEFF 		bl	dxl_set_id
+ 1792              	.LVL106:
+ 426:Core/Src/dynamixel.c ****     dxl_set_parameter(0, address);
+ 1793              		.loc 1 426 5 view .LVU344
+ 1794 0010 0320     		movs	r0, #3
+ 1795 0012 FFF7FEFF 		bl	dxl_set_instruction
+ 1796              	.LVL107:
+ 427:Core/Src/dynamixel.c ****     dxl_set_parameter(1, value);
+ 1797              		.loc 1 427 5 view .LVU345
+ 1798 0016 2900     		movs	r1, r5
+ 1799 0018 0020     		movs	r0, #0
+ 1800 001a FFF7FEFF 		bl	dxl_set_parameter
+ 1801              	.LVL108:
+ 428:Core/Src/dynamixel.c ****     dxl_set_length(2);
+ 1802              		.loc 1 428 5 view .LVU346
+ 1803 001e 2100     		movs	r1, r4
+ 1804 0020 0120     		movs	r0, #1
+ 1805 0022 FFF7FEFF 		bl	dxl_set_parameter
+ 1806              	.LVL109:
+ 429:Core/Src/dynamixel.c **** 
+ 1807              		.loc 1 429 5 view .LVU347
+ 1808 0026 0220     		movs	r0, #2
+ 1809 0028 FFF7FEFF 		bl	dxl_set_length
+ 1810              	.LVL110:
+ 431:Core/Src/dynamixel.c **** }
+ 1811              		.loc 1 431 5 view .LVU348
+ 431:Core/Src/dynamixel.c **** }
+ 1812              		.loc 1 431 12 is_stmt 0 view .LVU349
+ 1813 002c FFF7FEFF 		bl	dxl_txrx_packet
+ 1814              	.LVL111:
+ 432:Core/Src/dynamixel.c **** 
+ 1815              		.loc 1 432 1 view .LVU350
+ 1816              		@ sp needed
+ 1817              	.LVL112:
+ 1818              	.LVL113:
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 46
+
+
+ 432:Core/Src/dynamixel.c **** 
+ 1819              		.loc 1 432 1 view .LVU351
+ 1820 0030 70BD     		pop	{r4, r5, r6, pc}
+ 1821              	.L130:
+ 1822 0032 C046     		.align	2
+ 1823              	.L129:
+ 1824 0034 00000000 		.word	.LANCHOR4
+ 1825              		.cfi_endproc
+ 1826              	.LFE70:
+ 1828              		.section	.text.dxl_read_word,"ax",%progbits
+ 1829              		.align	1
+ 1830              		.global	dxl_read_word
+ 1831              		.syntax unified
+ 1832              		.code	16
+ 1833              		.thumb_func
+ 1834              		.fpu softvfp
+ 1836              	dxl_read_word:
+ 1837              	.LVL114:
+ 1838              	.LFB72:
+ 441:Core/Src/dynamixel.c ****     // ASSERT(0 <= address);
+ 1839              		.loc 1 441 1 is_stmt 1 view -0
+ 1840              		.cfi_startproc
+ 1841              		@ args = 0, pretend = 0, frame = 0
+ 1842              		@ frame_needed = 0, uses_anonymous_args = 0
+ 441:Core/Src/dynamixel.c ****     // ASSERT(0 <= address);
+ 1843              		.loc 1 441 1 is_stmt 0 view .LVU353
+ 1844 0000 70B5     		push	{r4, r5, r6, lr}
+ 1845              	.LCFI18:
+ 1846              		.cfi_def_cfa_offset 16
+ 1847              		.cfi_offset 4, -16
+ 1848              		.cfi_offset 5, -12
+ 1849              		.cfi_offset 6, -8
+ 1850              		.cfi_offset 14, -4
+ 1851 0002 0D00     		movs	r5, r1
+ 1852 0004 1400     		movs	r4, r2
+ 448:Core/Src/dynamixel.c ****         return DXL_BUSY;
+ 1853              		.loc 1 448 5 is_stmt 1 view .LVU354
+ 450:Core/Src/dynamixel.c **** 
+ 1854              		.loc 1 450 5 view .LVU355
+ 450:Core/Src/dynamixel.c **** 
+ 1855              		.loc 1 450 10 is_stmt 0 view .LVU356
+ 1856 0006 104B     		ldr	r3, .L134
+ 1857 0008 0122     		movs	r2, #1
+ 1858              	.LVL115:
+ 450:Core/Src/dynamixel.c **** 
+ 1859              		.loc 1 450 10 view .LVU357
+ 1860 000a 1A60     		str	r2, [r3]
+ 452:Core/Src/dynamixel.c ****     dxl_set_instruction(INST_READ);
+ 1861              		.loc 1 452 5 is_stmt 1 view .LVU358
+ 1862 000c FFF7FEFF 		bl	dxl_set_id
+ 1863              	.LVL116:
+ 453:Core/Src/dynamixel.c ****     dxl_set_parameter(0, address);
+ 1864              		.loc 1 453 5 view .LVU359
+ 1865 0010 0220     		movs	r0, #2
+ 1866 0012 FFF7FEFF 		bl	dxl_set_instruction
+ 1867              	.LVL117:
+ 454:Core/Src/dynamixel.c ****     dxl_set_parameter(1, DXL_WORD);
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 47
+
+
+ 1868              		.loc 1 454 5 view .LVU360
+ 1869 0016 2900     		movs	r1, r5
+ 1870 0018 0020     		movs	r0, #0
+ 1871 001a FFF7FEFF 		bl	dxl_set_parameter
+ 1872              	.LVL118:
+ 455:Core/Src/dynamixel.c ****     dxl_set_length(2);
+ 1873              		.loc 1 455 5 view .LVU361
+ 1874 001e 0221     		movs	r1, #2
+ 1875 0020 0120     		movs	r0, #1
+ 1876 0022 FFF7FEFF 		bl	dxl_set_parameter
+ 1877              	.LVL119:
+ 456:Core/Src/dynamixel.c **** 
+ 1878              		.loc 1 456 5 view .LVU362
+ 1879 0026 0220     		movs	r0, #2
+ 1880 0028 FFF7FEFF 		bl	dxl_set_length
+ 1881              	.LVL120:
+ 458:Core/Src/dynamixel.c ****     if (read_callback == NULL)
+ 1882              		.loc 1 458 5 view .LVU363
+ 458:Core/Src/dynamixel.c ****     if (read_callback == NULL)
+ 1883              		.loc 1 458 16 is_stmt 0 view .LVU364
+ 1884 002c 074B     		ldr	r3, .L134+4
+ 1885 002e 1C60     		str	r4, [r3]
+ 459:Core/Src/dynamixel.c ****         read_callback = read_word_callback;
+ 1886              		.loc 1 459 5 is_stmt 1 view .LVU365
+ 459:Core/Src/dynamixel.c ****         read_callback = read_word_callback;
+ 1887              		.loc 1 459 23 is_stmt 0 view .LVU366
+ 1888 0030 074B     		ldr	r3, .L134+8
+ 1889 0032 1B68     		ldr	r3, [r3]
+ 459:Core/Src/dynamixel.c ****         read_callback = read_word_callback;
+ 1890              		.loc 1 459 8 view .LVU367
+ 1891 0034 002B     		cmp	r3, #0
+ 1892 0036 02D0     		beq	.L133
+ 1893              	.L132:
+ 462:Core/Src/dynamixel.c **** }
+ 1894              		.loc 1 462 5 is_stmt 1 view .LVU368
+ 462:Core/Src/dynamixel.c **** }
+ 1895              		.loc 1 462 12 is_stmt 0 view .LVU369
+ 1896 0038 FFF7FEFF 		bl	dxl_txrx_packet
+ 1897              	.LVL121:
+ 463:Core/Src/dynamixel.c **** 
+ 1898              		.loc 1 463 1 view .LVU370
+ 1899              		@ sp needed
+ 1900              	.LVL122:
+ 1901              	.LVL123:
+ 463:Core/Src/dynamixel.c **** 
+ 1902              		.loc 1 463 1 view .LVU371
+ 1903 003c 70BD     		pop	{r4, r5, r6, pc}
+ 1904              	.LVL124:
+ 1905              	.L133:
+ 460:Core/Src/dynamixel.c **** 
+ 1906              		.loc 1 460 9 is_stmt 1 view .LVU372
+ 460:Core/Src/dynamixel.c **** 
+ 1907              		.loc 1 460 23 is_stmt 0 view .LVU373
+ 1908 003e 044B     		ldr	r3, .L134+8
+ 1909 0040 044A     		ldr	r2, .L134+12
+ 1910 0042 1A60     		str	r2, [r3]
+ 1911 0044 F8E7     		b	.L132
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 48
+
+
+ 1912              	.L135:
+ 1913 0046 C046     		.align	2
+ 1914              	.L134:
+ 1915 0048 00000000 		.word	.LANCHOR4
+ 1916 004c 00000000 		.word	.LANCHOR7
+ 1917 0050 00000000 		.word	.LANCHOR8
+ 1918 0054 00000000 		.word	read_word_callback
+ 1919              		.cfi_endproc
+ 1920              	.LFE72:
+ 1922              		.section	.text.dxl_write_word,"ax",%progbits
+ 1923              		.align	1
+ 1924              		.global	dxl_write_word
+ 1925              		.syntax unified
+ 1926              		.code	16
+ 1927              		.thumb_func
+ 1928              		.fpu softvfp
+ 1930              	dxl_write_word:
+ 1931              	.LVL125:
+ 1932              	.LFB73:
+ 467:Core/Src/dynamixel.c ****     // ASSERT(0 <= address);
+ 1933              		.loc 1 467 1 is_stmt 1 view -0
+ 1934              		.cfi_startproc
+ 1935              		@ args = 0, pretend = 0, frame = 0
+ 1936              		@ frame_needed = 0, uses_anonymous_args = 0
+ 467:Core/Src/dynamixel.c ****     // ASSERT(0 <= address);
+ 1937              		.loc 1 467 1 is_stmt 0 view .LVU375
+ 1938 0000 70B5     		push	{r4, r5, r6, lr}
+ 1939              	.LCFI19:
+ 1940              		.cfi_def_cfa_offset 16
+ 1941              		.cfi_offset 4, -16
+ 1942              		.cfi_offset 5, -12
+ 1943              		.cfi_offset 6, -8
+ 1944              		.cfi_offset 14, -4
+ 1945 0002 0D00     		movs	r5, r1
+ 1946 0004 1400     		movs	r4, r2
+ 472:Core/Src/dynamixel.c ****         return DXL_BUSY;
+ 1947              		.loc 1 472 5 is_stmt 1 view .LVU376
+ 474:Core/Src/dynamixel.c **** 
+ 1948              		.loc 1 474 5 view .LVU377
+ 474:Core/Src/dynamixel.c **** 
+ 1949              		.loc 1 474 10 is_stmt 0 view .LVU378
+ 1950 0006 104B     		ldr	r3, .L137
+ 1951 0008 0122     		movs	r2, #1
+ 1952              	.LVL126:
+ 474:Core/Src/dynamixel.c **** 
+ 1953              		.loc 1 474 10 view .LVU379
+ 1954 000a 1A60     		str	r2, [r3]
+ 476:Core/Src/dynamixel.c ****     dxl_set_instruction(INST_WRITE);
+ 1955              		.loc 1 476 5 is_stmt 1 view .LVU380
+ 1956 000c FFF7FEFF 		bl	dxl_set_id
+ 1957              	.LVL127:
+ 477:Core/Src/dynamixel.c ****     dxl_set_parameter(0, address);
+ 1958              		.loc 1 477 5 view .LVU381
+ 1959 0010 0320     		movs	r0, #3
+ 1960 0012 FFF7FEFF 		bl	dxl_set_instruction
+ 1961              	.LVL128:
+ 478:Core/Src/dynamixel.c ****     dxl_set_parameter(1, dxl_get_lowbyte(value));
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 49
+
+
+ 1962              		.loc 1 478 5 view .LVU382
+ 1963 0016 2900     		movs	r1, r5
+ 1964 0018 0020     		movs	r0, #0
+ 1965 001a FFF7FEFF 		bl	dxl_set_parameter
+ 1966              	.LVL129:
+ 479:Core/Src/dynamixel.c ****     dxl_set_parameter(2, dxl_get_highbyte(value));
+ 1967              		.loc 1 479 5 view .LVU383
+ 479:Core/Src/dynamixel.c ****     dxl_set_parameter(2, dxl_get_highbyte(value));
+ 1968              		.loc 1 479 26 is_stmt 0 view .LVU384
+ 1969 001e 2000     		movs	r0, r4
+ 1970 0020 FFF7FEFF 		bl	dxl_get_lowbyte
+ 1971              	.LVL130:
+ 1972 0024 0100     		movs	r1, r0
+ 479:Core/Src/dynamixel.c ****     dxl_set_parameter(2, dxl_get_highbyte(value));
+ 1973              		.loc 1 479 5 view .LVU385
+ 1974 0026 0120     		movs	r0, #1
+ 1975 0028 FFF7FEFF 		bl	dxl_set_parameter
+ 1976              	.LVL131:
+ 480:Core/Src/dynamixel.c ****     dxl_set_length(3);
+ 1977              		.loc 1 480 5 is_stmt 1 view .LVU386
+ 480:Core/Src/dynamixel.c ****     dxl_set_length(3);
+ 1978              		.loc 1 480 26 is_stmt 0 view .LVU387
+ 1979 002c 2000     		movs	r0, r4
+ 1980 002e FFF7FEFF 		bl	dxl_get_highbyte
+ 1981              	.LVL132:
+ 1982 0032 0100     		movs	r1, r0
+ 480:Core/Src/dynamixel.c ****     dxl_set_length(3);
+ 1983              		.loc 1 480 5 view .LVU388
+ 1984 0034 0220     		movs	r0, #2
+ 1985 0036 FFF7FEFF 		bl	dxl_set_parameter
+ 1986              	.LVL133:
+ 481:Core/Src/dynamixel.c **** 
+ 1987              		.loc 1 481 5 is_stmt 1 view .LVU389
+ 1988 003a 0320     		movs	r0, #3
+ 1989 003c FFF7FEFF 		bl	dxl_set_length
+ 1990              	.LVL134:
+ 483:Core/Src/dynamixel.c **** }
+ 1991              		.loc 1 483 5 view .LVU390
+ 483:Core/Src/dynamixel.c **** }
+ 1992              		.loc 1 483 12 is_stmt 0 view .LVU391
+ 1993 0040 FFF7FEFF 		bl	dxl_txrx_packet
+ 1994              	.LVL135:
+ 484:Core/Src/dynamixel.c **** 
+ 1995              		.loc 1 484 1 view .LVU392
+ 1996              		@ sp needed
+ 1997              	.LVL136:
+ 1998              	.LVL137:
+ 484:Core/Src/dynamixel.c **** 
+ 1999              		.loc 1 484 1 view .LVU393
+ 2000 0044 70BD     		pop	{r4, r5, r6, pc}
+ 2001              	.L138:
+ 2002 0046 C046     		.align	2
+ 2003              	.L137:
+ 2004 0048 00000000 		.word	.LANCHOR4
+ 2005              		.cfi_endproc
+ 2006              	.LFE73:
+ 2008              		.section	.text.dxl_set_goal_position,"ax",%progbits
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 50
+
+
+ 2009              		.align	1
+ 2010              		.global	dxl_set_goal_position
+ 2011              		.syntax unified
+ 2012              		.code	16
+ 2013              		.thumb_func
+ 2014              		.fpu softvfp
+ 2016              	dxl_set_goal_position:
+ 2017              	.LVL138:
+ 2018              	.LFB74:
+ 488:Core/Src/dynamixel.c ****     //ASSERT(angle <= 300);
+ 2019              		.loc 1 488 1 is_stmt 1 view -0
+ 2020              		.cfi_startproc
+ 2021              		@ args = 0, pretend = 0, frame = 0
+ 2022              		@ frame_needed = 0, uses_anonymous_args = 0
+ 488:Core/Src/dynamixel.c ****     //ASSERT(angle <= 300);
+ 2023              		.loc 1 488 1 is_stmt 0 view .LVU395
+ 2024 0000 10B5     		push	{r4, lr}
+ 2025              	.LCFI20:
+ 2026              		.cfi_def_cfa_offset 8
+ 2027              		.cfi_offset 4, -8
+ 2028              		.cfi_offset 14, -4
+ 2029 0002 0400     		movs	r4, r0
+ 490:Core/Src/dynamixel.c **** }
+ 2030              		.loc 1 490 5 is_stmt 1 view .LVU396
+ 490:Core/Src/dynamixel.c **** }
+ 2031              		.loc 1 490 64 is_stmt 0 view .LVU397
+ 2032 0004 8802     		lsls	r0, r1, #10
+ 2033              	.LVL139:
+ 490:Core/Src/dynamixel.c **** }
+ 2034              		.loc 1 490 64 view .LVU398
+ 2035 0006 401A     		subs	r0, r0, r1
+ 490:Core/Src/dynamixel.c **** }
+ 2036              		.loc 1 490 71 view .LVU399
+ 2037 0008 9621     		movs	r1, #150
+ 2038              	.LVL140:
+ 490:Core/Src/dynamixel.c **** }
+ 2039              		.loc 1 490 71 view .LVU400
+ 2040 000a 4900     		lsls	r1, r1, #1
+ 2041 000c FFF7FEFF 		bl	__aeabi_uidiv
+ 2042              	.LVL141:
+ 2043 0010 0200     		movs	r2, r0
+ 490:Core/Src/dynamixel.c **** }
+ 2044              		.loc 1 490 12 view .LVU401
+ 2045 0012 1E21     		movs	r1, #30
+ 2046 0014 2000     		movs	r0, r4
+ 2047 0016 FFF7FEFF 		bl	dxl_write_byte
+ 2048              	.LVL142:
+ 491:Core/Src/dynamixel.c **** 
+ 2049              		.loc 1 491 1 view .LVU402
+ 2050              		@ sp needed
+ 2051              	.LVL143:
+ 491:Core/Src/dynamixel.c **** 
+ 2052              		.loc 1 491 1 view .LVU403
+ 2053 001a 10BD     		pop	{r4, pc}
+ 2054              		.cfi_endproc
+ 2055              	.LFE74:
+ 2057              		.section	.text.dxl_get_goal_position,"ax",%progbits
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 51
+
+
+ 2058              		.align	1
+ 2059              		.global	dxl_get_goal_position
+ 2060              		.syntax unified
+ 2061              		.code	16
+ 2062              		.thumb_func
+ 2063              		.fpu softvfp
+ 2065              	dxl_get_goal_position:
+ 2066              	.LVL144:
+ 2067              	.LFB76:
+ 501:Core/Src/dynamixel.c ****     read_callback = read_byte_callback_goal_position;
+ 2068              		.loc 1 501 1 is_stmt 1 view -0
+ 2069              		.cfi_startproc
+ 2070              		@ args = 0, pretend = 0, frame = 0
+ 2071              		@ frame_needed = 0, uses_anonymous_args = 0
+ 501:Core/Src/dynamixel.c ****     read_callback = read_byte_callback_goal_position;
+ 2072              		.loc 1 501 1 is_stmt 0 view .LVU405
+ 2073 0000 10B5     		push	{r4, lr}
+ 2074              	.LCFI21:
+ 2075              		.cfi_def_cfa_offset 8
+ 2076              		.cfi_offset 4, -8
+ 2077              		.cfi_offset 14, -4
+ 2078 0002 0A00     		movs	r2, r1
+ 502:Core/Src/dynamixel.c ****     return dxl_read_word(id, DXL_ADDRESS_GOAL_POSITION, angle);
+ 2079              		.loc 1 502 5 is_stmt 1 view .LVU406
+ 502:Core/Src/dynamixel.c ****     return dxl_read_word(id, DXL_ADDRESS_GOAL_POSITION, angle);
+ 2080              		.loc 1 502 19 is_stmt 0 view .LVU407
+ 2081 0004 034B     		ldr	r3, .L141
+ 2082 0006 0449     		ldr	r1, .L141+4
+ 2083              	.LVL145:
+ 502:Core/Src/dynamixel.c ****     return dxl_read_word(id, DXL_ADDRESS_GOAL_POSITION, angle);
+ 2084              		.loc 1 502 19 view .LVU408
+ 2085 0008 1960     		str	r1, [r3]
+ 503:Core/Src/dynamixel.c **** }
+ 2086              		.loc 1 503 5 is_stmt 1 view .LVU409
+ 503:Core/Src/dynamixel.c **** }
+ 2087              		.loc 1 503 12 is_stmt 0 view .LVU410
+ 2088 000a 1E21     		movs	r1, #30
+ 2089 000c FFF7FEFF 		bl	dxl_read_word
+ 2090              	.LVL146:
+ 504:Core/Src/dynamixel.c **** 
+ 2091              		.loc 1 504 1 view .LVU411
+ 2092              		@ sp needed
+ 2093 0010 10BD     		pop	{r4, pc}
+ 2094              	.L142:
+ 2095 0012 C046     		.align	2
+ 2096              	.L141:
+ 2097 0014 00000000 		.word	.LANCHOR8
+ 2098 0018 00000000 		.word	read_byte_callback_goal_position
+ 2099              		.cfi_endproc
+ 2100              	.LFE76:
+ 2102              		.section	.text.dxl_set_AX12_delay_time,"ax",%progbits
+ 2103              		.align	1
+ 2104              		.global	dxl_set_AX12_delay_time
+ 2105              		.syntax unified
+ 2106              		.code	16
+ 2107              		.thumb_func
+ 2108              		.fpu softvfp
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 52
+
+
+ 2110              	dxl_set_AX12_delay_time:
+ 2111              	.LVL147:
+ 2112              	.LFB77:
+ 508:Core/Src/dynamixel.c ****     return dxl_write_byte(id, DXL_ADDRESS_RETURN_DELAY, time / 2);
+ 2113              		.loc 1 508 1 is_stmt 1 view -0
+ 2114              		.cfi_startproc
+ 2115              		@ args = 0, pretend = 0, frame = 0
+ 2116              		@ frame_needed = 0, uses_anonymous_args = 0
+ 508:Core/Src/dynamixel.c ****     return dxl_write_byte(id, DXL_ADDRESS_RETURN_DELAY, time / 2);
+ 2117              		.loc 1 508 1 is_stmt 0 view .LVU413
+ 2118 0000 10B5     		push	{r4, lr}
+ 2119              	.LCFI22:
+ 2120              		.cfi_def_cfa_offset 8
+ 2121              		.cfi_offset 4, -8
+ 2122              		.cfi_offset 14, -4
+ 509:Core/Src/dynamixel.c **** }
+ 2123              		.loc 1 509 5 is_stmt 1 view .LVU414
+ 509:Core/Src/dynamixel.c **** }
+ 2124              		.loc 1 509 62 is_stmt 0 view .LVU415
+ 2125 0002 4A08     		lsrs	r2, r1, #1
+ 509:Core/Src/dynamixel.c **** }
+ 2126              		.loc 1 509 12 view .LVU416
+ 2127 0004 0521     		movs	r1, #5
+ 2128              	.LVL148:
+ 509:Core/Src/dynamixel.c **** }
+ 2129              		.loc 1 509 12 view .LVU417
+ 2130 0006 FFF7FEFF 		bl	dxl_write_byte
+ 2131              	.LVL149:
+ 510:Core/Src/dynamixel.c **** 
+ 2132              		.loc 1 510 1 view .LVU418
+ 2133              		@ sp needed
+ 2134 000a 10BD     		pop	{r4, pc}
+ 2135              		.cfi_endproc
+ 2136              	.LFE77:
+ 2138              		.section	.text.dxl_get_voltage,"ax",%progbits
+ 2139              		.align	1
+ 2140              		.global	dxl_get_voltage
+ 2141              		.syntax unified
+ 2142              		.code	16
+ 2143              		.thumb_func
+ 2144              		.fpu softvfp
+ 2146              	dxl_get_voltage:
+ 2147              	.LVL150:
+ 2148              	.LFB79:
+ 519:Core/Src/dynamixel.c **** 
+ 520:Core/Src/dynamixel.c **** int dxl_get_voltage(const unsigned id, float *volt)
+ 521:Core/Src/dynamixel.c **** {
+ 2149              		.loc 1 521 1 is_stmt 1 view -0
+ 2150              		.cfi_startproc
+ 2151              		@ args = 0, pretend = 0, frame = 0
+ 2152              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2153              		.loc 1 521 1 is_stmt 0 view .LVU420
+ 2154 0000 10B5     		push	{r4, lr}
+ 2155              	.LCFI23:
+ 2156              		.cfi_def_cfa_offset 8
+ 2157              		.cfi_offset 4, -8
+ 2158              		.cfi_offset 14, -4
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 53
+
+
+ 2159 0002 0A00     		movs	r2, r1
+ 522:Core/Src/dynamixel.c ****     read_callback = read_byte_callback_voltage;
+ 2160              		.loc 1 522 5 is_stmt 1 view .LVU421
+ 2161              		.loc 1 522 19 is_stmt 0 view .LVU422
+ 2162 0004 034B     		ldr	r3, .L145
+ 2163 0006 0449     		ldr	r1, .L145+4
+ 2164              	.LVL151:
+ 2165              		.loc 1 522 19 view .LVU423
+ 2166 0008 1960     		str	r1, [r3]
+ 523:Core/Src/dynamixel.c ****     return dxl_read_word(id, DXL_ADDRESS_PRESENT_VOLTAGE, (unsigned*) volt);
+ 2167              		.loc 1 523 5 is_stmt 1 view .LVU424
+ 2168              		.loc 1 523 12 is_stmt 0 view .LVU425
+ 2169 000a 2A21     		movs	r1, #42
+ 2170 000c FFF7FEFF 		bl	dxl_read_word
+ 2171              	.LVL152:
+ 524:Core/Src/dynamixel.c **** }
+ 2172              		.loc 1 524 1 view .LVU426
+ 2173              		@ sp needed
+ 2174 0010 10BD     		pop	{r4, pc}
+ 2175              	.L146:
+ 2176 0012 C046     		.align	2
+ 2177              	.L145:
+ 2178 0014 00000000 		.word	.LANCHOR8
+ 2179 0018 00000000 		.word	read_byte_callback_voltage
+ 2180              		.cfi_endproc
+ 2181              	.LFE79:
+ 2183              		.section	.text.dxl_get_temperature,"ax",%progbits
+ 2184              		.align	1
+ 2185              		.global	dxl_get_temperature
+ 2186              		.syntax unified
+ 2187              		.code	16
+ 2188              		.thumb_func
+ 2189              		.fpu softvfp
+ 2191              	dxl_get_temperature:
+ 2192              	.LVL153:
+ 2193              	.LFB80:
+ 525:Core/Src/dynamixel.c **** 
+ 526:Core/Src/dynamixel.c **** // GET_TEMPERATURE
+ 527:Core/Src/dynamixel.c **** int dxl_get_temperature(const unsigned id, unsigned *temp)
+ 528:Core/Src/dynamixel.c **** {
+ 2194              		.loc 1 528 1 is_stmt 1 view -0
+ 2195              		.cfi_startproc
+ 2196              		@ args = 0, pretend = 0, frame = 0
+ 2197              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2198              		.loc 1 528 1 is_stmt 0 view .LVU428
+ 2199 0000 10B5     		push	{r4, lr}
+ 2200              	.LCFI24:
+ 2201              		.cfi_def_cfa_offset 8
+ 2202              		.cfi_offset 4, -8
+ 2203              		.cfi_offset 14, -4
+ 2204 0002 0A00     		movs	r2, r1
+ 529:Core/Src/dynamixel.c ****     return dxl_read_byte(id, DXL_ADDRESS_PRESENT_TEMPERATURE, temp);
+ 2205              		.loc 1 529 5 is_stmt 1 view .LVU429
+ 2206              		.loc 1 529 12 is_stmt 0 view .LVU430
+ 2207 0004 2B21     		movs	r1, #43
+ 2208              	.LVL154:
+ 2209              		.loc 1 529 12 view .LVU431
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 54
+
+
+ 2210 0006 FFF7FEFF 		bl	dxl_read_byte
+ 2211              	.LVL155:
+ 530:Core/Src/dynamixel.c **** }
+ 2212              		.loc 1 530 1 view .LVU432
+ 2213              		@ sp needed
+ 2214 000a 10BD     		pop	{r4, pc}
+ 2215              		.cfi_endproc
+ 2216              	.LFE80:
+ 2218              		.section	.text.dxl_set_eeprom_lock,"ax",%progbits
+ 2219              		.align	1
+ 2220              		.global	dxl_set_eeprom_lock
+ 2221              		.syntax unified
+ 2222              		.code	16
+ 2223              		.thumb_func
+ 2224              		.fpu softvfp
+ 2226              	dxl_set_eeprom_lock:
+ 2227              	.LVL156:
+ 2228              	.LFB81:
+ 531:Core/Src/dynamixel.c **** 
+ 532:Core/Src/dynamixel.c **** // SET_EEPROM_LOCK
+ 533:Core/Src/dynamixel.c **** int dxl_set_eeprom_lock(const unsigned id, const int state)
+ 534:Core/Src/dynamixel.c **** {
+ 2229              		.loc 1 534 1 is_stmt 1 view -0
+ 2230              		.cfi_startproc
+ 2231              		@ args = 0, pretend = 0, frame = 0
+ 2232              		@ frame_needed = 0, uses_anonymous_args = 0
+ 2233              		.loc 1 534 1 is_stmt 0 view .LVU434
+ 2234 0000 10B5     		push	{r4, lr}
+ 2235              	.LCFI25:
+ 2236              		.cfi_def_cfa_offset 8
+ 2237              		.cfi_offset 4, -8
+ 2238              		.cfi_offset 14, -4
+ 2239 0002 0A00     		movs	r2, r1
+ 535:Core/Src/dynamixel.c ****     //ASSERT(state == 0 || state == 1);
+ 536:Core/Src/dynamixel.c ****     return dxl_write_byte(id, DXL_ADDRESS_EEPROM_LOCK, state);
+ 2240              		.loc 1 536 5 is_stmt 1 view .LVU435
+ 2241              		.loc 1 536 12 is_stmt 0 view .LVU436
+ 2242 0004 2F21     		movs	r1, #47
+ 2243              	.LVL157:
+ 2244              		.loc 1 536 12 view .LVU437
+ 2245 0006 FFF7FEFF 		bl	dxl_write_byte
+ 2246              	.LVL158:
+ 537:Core/Src/dynamixel.c **** }
+ 2247              		.loc 1 537 1 view .LVU438
+ 2248              		@ sp needed
+ 2249 000a 10BD     		pop	{r4, pc}
+ 2250              		.cfi_endproc
+ 2251              	.LFE81:
+ 2253              		.global	time
+ 2254              		.global	timeout
+ 2255              		.global	args_received
+ 2256              		.global	header_received
+ 2257              		.global	status
+ 2258              		.global	busy
+ 2259              		.global	read_callback
+ 2260              		.global	read_value
+ 2261              		.global	status_packet
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 55
+
+
+ 2262              		.global	instruction_packet
+ 2263              		.section	.bss.args_received,"aw",%nobits
+ 2264              		.align	2
+ 2265              		.set	.LANCHOR0,. + 0
+ 2268              	args_received:
+ 2269 0000 00000000 		.space	4
+ 2270              		.section	.bss.busy,"aw",%nobits
+ 2271              		.align	2
+ 2272              		.set	.LANCHOR4,. + 0
+ 2275              	busy:
+ 2276 0000 00000000 		.space	4
+ 2277              		.section	.bss.header_received,"aw",%nobits
+ 2278              		.align	2
+ 2279              		.set	.LANCHOR3,. + 0
+ 2282              	header_received:
+ 2283 0000 00000000 		.space	4
+ 2284              		.section	.bss.instruction_packet,"aw",%nobits
+ 2285              		.align	2
+ 2288              	instruction_packet:
+ 2289 0000 00000000 		.space	156
+ 2289      00000000 
+ 2289      00000000 
+ 2289      00000000 
+ 2289      00000000 
+ 2290              		.section	.bss.read_callback,"aw",%nobits
+ 2291              		.align	2
+ 2292              		.set	.LANCHOR8,. + 0
+ 2295              	read_callback:
+ 2296 0000 00000000 		.space	4
+ 2297              		.section	.bss.read_value,"aw",%nobits
+ 2298              		.align	2
+ 2299              		.set	.LANCHOR7,. + 0
+ 2302              	read_value:
+ 2303 0000 00000000 		.space	4
+ 2304              		.section	.bss.status_packet,"aw",%nobits
+ 2305              		.align	2
+ 2306              		.set	.LANCHOR1,. + 0
+ 2309              	status_packet:
+ 2310 0000 00000000 		.space	66
+ 2310      00000000 
+ 2310      00000000 
+ 2310      00000000 
+ 2310      00000000 
+ 2311              		.section	.bss.time,"aw",%nobits
+ 2312              		.align	2
+ 2313              		.set	.LANCHOR6,. + 0
+ 2316              	time:
+ 2317 0000 00000000 		.space	4
+ 2318              		.section	.data.status,"aw"
+ 2319              		.align	2
+ 2320              		.set	.LANCHOR2,. + 0
+ 2323              	status:
+ 2324 0000 0A000000 		.word	10
+ 2325              		.section	.data.timeout,"aw"
+ 2326              		.align	2
+ 2327              		.set	.LANCHOR5,. + 0
+ 2330              	timeout:
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 56
+
+
+ 2331 0000 64000000 		.word	100
+ 2332              		.text
+ 2333              	.Letext0:
+ 2334              		.file 2 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgcc
+ 2335              		.file 3 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgcc
+ 2336              		.file 4 "Drivers/CMSIS/Device/ST/STM32F0xx/Include/system_stm32f0xx.h"
+ 2337              		.file 5 "Drivers/CMSIS/Device/ST/STM32F0xx/Include/stm32f042x6.h"
+ 2338              		.file 6 "Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_def.h"
+ 2339              		.file 7 "Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_dma.h"
+ 2340              		.file 8 "Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_uart.h"
+ 2341              		.file 9 "Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal.h"
+ 2342              		.file 10 "Core/Inc/usart.h"
+ 2343              		.file 11 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgc
+ 2344              		.file 12 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgc
+ 2345              		.file 13 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgc
+ 2346              		.file 14 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgc
+ 2347              		.file 15 "Core/Inc/dynamixel.h"
+ 2348              		.file 16 "Core/Inc/dxl_hal.h"
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 57
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 dynamixel.c
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:16     .text.HAL2DXL_error:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:23     .text.HAL2DXL_error:0000000000000000 HAL2DXL_error
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:72     .text.rx_args_callback:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:79     .text.rx_args_callback:0000000000000000 rx_args_callback
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:97     .text.rx_args_callback:0000000000000008 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:102    .text.rx_header_callback:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:109    .text.rx_header_callback:0000000000000000 rx_header_callback
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:151    .text.rx_header_callback:0000000000000028 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:159    .text.dxl_abort:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:166    .text.dxl_abort:0000000000000000 dxl_abort
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:200    .text.dxl_abort:0000000000000018 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:205    .text.dxl_set_timeout:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:212    .text.dxl_set_timeout:0000000000000000 dxl_set_timeout
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:230    .text.dxl_set_timeout:0000000000000008 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:235    .text.dxl_timeout_start:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:242    .text.dxl_timeout_start:0000000000000000 dxl_timeout_start
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:266    .text.dxl_timeout_start:000000000000000c $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:271    .text.tx_callback:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:278    .text.tx_callback:0000000000000000 tx_callback
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:331    .text.tx_callback:0000000000000038 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2288   .bss.instruction_packet:0000000000000000 instruction_packet
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:339    .text.check_timeout:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:346    .text.check_timeout:0000000000000000 check_timeout
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:377    .text.check_timeout:0000000000000018 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:383    .text.checksum:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:390    .text.checksum:0000000000000000 checksum
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:450    .text.dxl_txrx_packet:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:457    .text.dxl_txrx_packet:0000000000000000 dxl_txrx_packet
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:530    .text.dxl_txrx_packet:0000000000000040 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:537    .text.dxl_get_parameter:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:544    .text.dxl_get_parameter:0000000000000000 dxl_get_parameter
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:566    .text.dxl_get_parameter:0000000000000008 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:571    .text.read_byte_callback:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:577    .text.read_byte_callback:0000000000000000 read_byte_callback
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:609    .text.read_byte_callback:0000000000000018 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:617    .text.read_byte_callback_voltage:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:624    .text.read_byte_callback_voltage:0000000000000000 read_byte_callback_voltage
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:662    .text.read_byte_callback_voltage:000000000000001c $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:668    .text.dxl_makeword:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:675    .text.dxl_makeword:0000000000000000 dxl_makeword
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:702    .text.read_word_callback:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:708    .text.read_word_callback:0000000000000000 read_word_callback
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:743    .text.read_word_callback:0000000000000020 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:749    .text.read_byte_callback_goal_position:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:755    .text.read_byte_callback_goal_position:0000000000000000 read_byte_callback_goal_position
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:803    .text.read_byte_callback_goal_position:0000000000000034 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:809    .text.dxl_get_lowbyte:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:816    .text.dxl_get_lowbyte:0000000000000000 dxl_get_lowbyte
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:836    .text.dxl_get_highbyte:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:843    .text.dxl_get_highbyte:0000000000000000 dxl_get_highbyte
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:865    .text.dxl_initialize:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:872    .text.dxl_initialize:0000000000000000 dxl_initialize
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:906    .text.dxl_terminate:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:913    .text.dxl_terminate:0000000000000000 dxl_terminate
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:935    .text.dxl_set_baudrate:0000000000000000 $t
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 58
+
+
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:942    .text.dxl_set_baudrate:0000000000000000 dxl_set_baudrate
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:969    .text.dxl_set_id:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:976    .text.dxl_set_id:0000000000000000 dxl_set_id
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:994    .text.dxl_set_id:0000000000000008 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:999    .text.dxl_set_instruction:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1006   .text.dxl_set_instruction:0000000000000000 dxl_set_instruction
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1024   .text.dxl_set_instruction:0000000000000008 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1029   .text.dxl_set_parameter:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1036   .text.dxl_set_parameter:0000000000000000 dxl_set_parameter
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1057   .text.dxl_set_parameter:0000000000000008 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1062   .text.dxl_set_length:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1069   .text.dxl_set_length:0000000000000000 dxl_set_length
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1087   .text.dxl_set_length:0000000000000008 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1092   .text.dxl_get_length:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1099   .text.dxl_get_length:0000000000000000 dxl_get_length
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1118   .text.dxl_get_length:0000000000000008 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1123   .text.dxl_get_error:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1130   .text.dxl_get_error:0000000000000000 dxl_get_error
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1147   .text.dxl_get_error:0000000000000008 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1152   .rodata.dxl_get_error_name.str1.4:0000000000000000 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1195   .text.dxl_get_error_name:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1202   .text.dxl_get_error_name:0000000000000000 dxl_get_error_name
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1220   .rodata.dxl_get_error_name:0000000000000000 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1319   .text.dxl_get_error_name:0000000000000048 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1338   .text.dxl_is_busy:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1345   .text.dxl_is_busy:0000000000000000 dxl_is_busy
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1362   .text.dxl_is_busy:0000000000000008 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1367   .text.dxl_get_txrx_status:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1374   .text.dxl_get_txrx_status:0000000000000000 dxl_get_txrx_status
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1391   .text.dxl_get_txrx_status:0000000000000008 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1396   .text.dxl_process_status_packet:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1403   .text.dxl_process_status_packet:0000000000000000 dxl_process_status_packet
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1600   .text.dxl_process_status_packet:00000000000000c8 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1612   .text.dxl_ping:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1619   .text.dxl_ping:0000000000000000 dxl_ping
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1659   .text.dxl_ping:0000000000000020 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1664   .text.dxl_read_byte:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1671   .text.dxl_read_byte:0000000000000000 dxl_read_byte
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1750   .text.dxl_read_byte:0000000000000048 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1758   .text.dxl_write_byte:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1765   .text.dxl_write_byte:0000000000000000 dxl_write_byte
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1824   .text.dxl_write_byte:0000000000000034 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1829   .text.dxl_read_word:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1836   .text.dxl_read_word:0000000000000000 dxl_read_word
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1915   .text.dxl_read_word:0000000000000048 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1923   .text.dxl_write_word:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:1930   .text.dxl_write_word:0000000000000000 dxl_write_word
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2004   .text.dxl_write_word:0000000000000048 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2009   .text.dxl_set_goal_position:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2016   .text.dxl_set_goal_position:0000000000000000 dxl_set_goal_position
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2058   .text.dxl_get_goal_position:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2065   .text.dxl_get_goal_position:0000000000000000 dxl_get_goal_position
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2097   .text.dxl_get_goal_position:0000000000000014 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2103   .text.dxl_set_AX12_delay_time:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2110   .text.dxl_set_AX12_delay_time:0000000000000000 dxl_set_AX12_delay_time
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2139   .text.dxl_get_voltage:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2146   .text.dxl_get_voltage:0000000000000000 dxl_get_voltage
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s 			page 59
+
+
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2178   .text.dxl_get_voltage:0000000000000014 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2184   .text.dxl_get_temperature:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2191   .text.dxl_get_temperature:0000000000000000 dxl_get_temperature
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2219   .text.dxl_set_eeprom_lock:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2226   .text.dxl_set_eeprom_lock:0000000000000000 dxl_set_eeprom_lock
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2316   .bss.time:0000000000000000 time
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2330   .data.timeout:0000000000000000 timeout
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2268   .bss.args_received:0000000000000000 args_received
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2282   .bss.header_received:0000000000000000 header_received
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2323   .data.status:0000000000000000 status
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2275   .bss.busy:0000000000000000 busy
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2295   .bss.read_callback:0000000000000000 read_callback
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2302   .bss.read_value:0000000000000000 read_value
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2309   .bss.status_packet:0000000000000000 status_packet
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2264   .bss.args_received:0000000000000000 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2271   .bss.busy:0000000000000000 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2278   .bss.header_received:0000000000000000 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2285   .bss.instruction_packet:0000000000000000 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2291   .bss.read_callback:0000000000000000 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2298   .bss.read_value:0000000000000000 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2305   .bss.status_packet:0000000000000000 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2312   .bss.time:0000000000000000 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2319   .data.status:0000000000000000 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccepmgfi.s:2326   .data.timeout:0000000000000000 $d
+
+UNDEFINED SYMBOLS
+dxl_set_rx_callback
+dxl_hal_rx
+dxl_hal_abort
+HAL_GetTick
+dxl_set_tx_callback
+dxl_hal_tx
+__aeabi_i2f
+__aeabi_fdiv
+__aeabi_uidiv
+dxl_hal_open
+dxl_hal_close
+dxl_hal_set_baudrate

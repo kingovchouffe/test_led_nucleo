@@ -27,7 +27,7 @@
 			"intelliSenseMode": "gcc-arm",
 			"cStandard": "c99",
 			"cppStandard": "c++17",
-			"compilerPath": "c:/Users/pierr/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/ArmGcc/bin/arm-none-eabi-gcc.exe",
+			"compilerPath": "c:/Users/Pierre-Anthony/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/ArmGcc/bin/arm-none-eabi-gcc.exe",
 			"defines":
 			[
 				"${userDefines}",
@@ -38,7 +38,7 @@
 			[
 				"${userIncPaths}",
 				"${workspaceFolder}",
-				"c:/Users/pierr/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/ArmGcc/lib/gcc/arm-none-eabi/9.2.1/include",
+				"c:/Users/Pierre-Anthony/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/ArmGcc/lib/gcc/arm-none-eabi/9.2.1/include",
 				"Core/Inc", 
 				"Drivers/STM32F0xx_HAL_Driver/Inc", 
 				"Drivers/STM32F0xx_HAL_Driver/Inc/Legacy", 

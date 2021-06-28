@@ -1,4 +1,4 @@
-build/stm32f0xx_hal_msp.o: Core/Src/stm32f0xx_hal_msp.c Core/Inc/main.h \
+build/servo_control.o: Core/Src/servo_control.c Core/Inc/main.h \
  Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal.h \
  Core/Inc/stm32f0xx_hal_conf.h \
  Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_rcc.h \

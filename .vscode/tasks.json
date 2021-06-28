@@ -10,10 +10,10 @@
 				"isDefault": true
 			},
 			"type": "shell",
-			"command": "c:/Users/pierr/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/BuildTools/bin/make.exe",
+			"command": "c:/Users/Pierre-Anthony/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/BuildTools/bin/make.exe",
 			"args":
 			[
-				"GCC_PATH=c:/Users/pierr/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/ArmGcc/bin",
+				"GCC_PATH=c:/Users/Pierre-Anthony/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/ArmGcc/bin",
 				"-j6"
 			],
 			"problemMatcher":
@@ -36,7 +36,7 @@
 		{
 			"label": "Compile current file",
 			"type": "shell",
-			"command": "c:/Users/pierr/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/ArmGcc/bin/arm-none-eabi-gcc.exe",
+			"command": "c:/Users/Pierre-Anthony/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/ArmGcc/bin/arm-none-eabi-gcc.exe",
 			"args":
 			[
 				"-c",
@@ -84,13 +84,13 @@
 		{
 			"label": "Download",
 			"type": "shell",
-			"command": "c:/Users/pierr/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/OpenOCD/bin/openocd.exe",
+			"command": "c:/Users/Pierre-Anthony/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/OpenOCD/bin/openocd.exe",
 			"args":
 			[
 				"-f",
-				"c:/Users/pierr/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/OpenOCD/scripts/interface/stlink.cfg",
+				"c:/Users/Pierre-Anthony/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/OpenOCD/scripts/interface/stlink.cfg",
 				"-f",
-				"c:/Users/pierr/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/OpenOCD/scripts/target/stm32f0x.cfg",
+				"c:/Users/Pierre-Anthony/.vscode/extensions/buzzyelectronics.stm-helper-1.2.9/OpenOCD/scripts/target/stm32f0x.cfg",
 				"-c",
 				"program build/test_led_nucleo.elf",
 				"-c init",

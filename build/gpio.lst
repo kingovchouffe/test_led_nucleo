@@ -1,4 +1,4 @@
-ARM GAS  C:\Users\pierr\AppData\Local\Temp\ccjWOoCr.s 			page 1
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccdErSJQ.s 			page 1
 
 
    1              		.cpu cortex-m0
@@ -24,7 +24,7 @@ ARM GAS  C:\Users\pierr\AppData\Local\Temp\ccjWOoCr.s 			page 1
   21              		.thumb_func
   22              		.fpu softvfp
   24              	MX_GPIO_Init:
-  25              	.LFB40:
+  25              	.LFB43:
   26              		.file 1 "Core/Src/gpio.c"
    1:Core/Src/gpio.c **** /**
    2:Core/Src/gpio.c ****   ******************************************************************************
@@ -58,7 +58,7 @@ ARM GAS  C:\Users\pierr\AppData\Local\Temp\ccjWOoCr.s 			page 1
   30:Core/Src/gpio.c **** /* USER CODE BEGIN 1 */
   31:Core/Src/gpio.c **** 
   32:Core/Src/gpio.c **** /* USER CODE END 1 */
-ARM GAS  C:\Users\pierr\AppData\Local\Temp\ccjWOoCr.s 			page 2
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccdErSJQ.s 			page 2
 
 
   33:Core/Src/gpio.c **** 
@@ -118,7 +118,7 @@ ARM GAS  C:\Users\pierr\AppData\Local\Temp\ccjWOoCr.s 			page 1
   65              	.LBB3:
   66              		.loc 1 48 3 view .LVU10
   67              		.loc 1 48 3 view .LVU11
-ARM GAS  C:\Users\pierr\AppData\Local\Temp\ccjWOoCr.s 			page 3
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccdErSJQ.s 			page 3
 
 
   68 0022 5969     		ldr	r1, [r3, #20]
@@ -178,7 +178,7 @@ ARM GAS  C:\Users\pierr\AppData\Local\Temp\ccjWOoCr.s 			page 1
  113              		.loc 1 57 3 is_stmt 1 view .LVU26
  114              		.loc 1 57 24 is_stmt 0 view .LVU27
  115 005a 0023     		movs	r3, #0
-ARM GAS  C:\Users\pierr\AppData\Local\Temp\ccjWOoCr.s 			page 4
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccdErSJQ.s 			page 4
 
 
  116 005c 0593     		str	r3, [sp, #20]
@@ -204,11 +204,11 @@ ARM GAS  C:\Users\pierr\AppData\Local\Temp\ccjWOoCr.s 			page 1
  132 006c 00100240 		.word	1073876992
  133 0070 00040048 		.word	1207960576
  134              		.cfi_endproc
- 135              	.LFE40:
+ 135              	.LFE43:
  137              		.text
  138              	.Letext0:
- 139              		.file 2 "c:\\users\\pierr\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgcc\\arm-non
- 140              		.file 3 "c:\\users\\pierr\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgcc\\arm-non
+ 139              		.file 2 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgcc
+ 140              		.file 3 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgcc
  141              		.file 4 "Drivers/CMSIS/Device/ST/STM32F0xx/Include/system_stm32f0xx.h"
  142              		.file 5 "Drivers/CMSIS/Device/ST/STM32F0xx/Include/stm32f042x6.h"
  143              		.file 6 "Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_def.h"
@@ -217,19 +217,20 @@ ARM GAS  C:\Users\pierr\AppData\Local\Temp\ccjWOoCr.s 			page 1
  146              		.file 9 "Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_uart.h"
  147              		.file 10 "Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal.h"
  148              		.file 11 "Core/Inc/usart.h"
- 149              		.file 12 "c:\\users\\pierr\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgcc\\arm-no
- 150              		.file 13 "c:\\users\\pierr\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgcc\\arm-no
- 151              		.file 14 "c:\\users\\pierr\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgcc\\lib\\g
- 152              		.file 15 "c:\\users\\pierr\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgcc\\arm-no
- 153              		.file 16 "<built-in>"
-ARM GAS  C:\Users\pierr\AppData\Local\Temp\ccjWOoCr.s 			page 5
+ 149              		.file 12 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgc
+ 150              		.file 13 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgc
+ 151              		.file 14 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgc
+ 152              		.file 15 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgc
+ 153              		.file 16 "Core/Inc/servo_control.h"
+ 154              		.file 17 "<built-in>"
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccdErSJQ.s 			page 5
 
 
 DEFINED SYMBOLS
                             *ABS*:0000000000000000 gpio.c
-C:\Users\pierr\AppData\Local\Temp\ccjWOoCr.s:16     .text.MX_GPIO_Init:0000000000000000 $t
-C:\Users\pierr\AppData\Local\Temp\ccjWOoCr.s:24     .text.MX_GPIO_Init:0000000000000000 MX_GPIO_Init
-C:\Users\pierr\AppData\Local\Temp\ccjWOoCr.s:132    .text.MX_GPIO_Init:000000000000006c $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccdErSJQ.s:16     .text.MX_GPIO_Init:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccdErSJQ.s:24     .text.MX_GPIO_Init:0000000000000000 MX_GPIO_Init
+C:\Users\PIERRE~1\AppData\Local\Temp\ccdErSJQ.s:132    .text.MX_GPIO_Init:000000000000006c $d
 
 UNDEFINED SYMBOLS
 memset

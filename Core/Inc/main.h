@@ -33,6 +33,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "LX16A.h"
+#include "servo_control.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

@@ -1,0 +1,609 @@
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s 			page 1
+
+
+   1              		.cpu cortex-m0
+   2              		.eabi_attribute 20, 1
+   3              		.eabi_attribute 21, 1
+   4              		.eabi_attribute 23, 3
+   5              		.eabi_attribute 24, 1
+   6              		.eabi_attribute 25, 1
+   7              		.eabi_attribute 26, 1
+   8              		.eabi_attribute 30, 1
+   9              		.eabi_attribute 34, 0
+  10              		.eabi_attribute 18, 4
+  11              		.file	"dxl_hal.c"
+  12              		.text
+  13              	.Ltext0:
+  14              		.cfi_sections	.debug_frame
+  15              		.section	.text.dxl_set_tx_callback,"ax",%progbits
+  16              		.align	1
+  17              		.global	dxl_set_tx_callback
+  18              		.arch armv6s-m
+  19              		.syntax unified
+  20              		.code	16
+  21              		.thumb_func
+  22              		.fpu softvfp
+  24              	dxl_set_tx_callback:
+  25              	.LVL0:
+  26              	.LFB40:
+  27              		.file 1 "Core/Src/dxl_hal.c"
+   1:Core/Src/dxl_hal.c **** /**
+   2:Core/Src/dxl_hal.c ****  * Modification of the HAL of the Dynamixel SDK for STM32 UART.
+   3:Core/Src/dxl_hal.c ****  *
+   4:Core/Src/dxl_hal.c ****  * Arthus Leroy
+   5:Core/Src/dxl_hal.c ****  **/
+   6:Core/Src/dxl_hal.c **** 
+   7:Core/Src/dxl_hal.c **** # include "main.h"
+   8:Core/Src/dxl_hal.c **** 
+   9:Core/Src/dxl_hal.c **** UART_HandleTypeDef *dxl_huart = NULL;
+  10:Core/Src/dxl_hal.c **** 
+  11:Core/Src/dxl_hal.c **** static void (*tx_callback)(void) = NULL;
+  12:Core/Src/dxl_hal.c **** void dxl_set_tx_callback(void (*func)(void))
+  13:Core/Src/dxl_hal.c **** {
+  28              		.loc 1 13 1 view -0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              		@ link register save eliminated.
+  14:Core/Src/dxl_hal.c **** 	tx_callback = func;
+  33              		.loc 1 14 2 view .LVU1
+  34              		.loc 1 14 14 is_stmt 0 view .LVU2
+  35 0000 014B     		ldr	r3, .L2
+  36 0002 1860     		str	r0, [r3]
+  15:Core/Src/dxl_hal.c **** }
+  37              		.loc 1 15 1 view .LVU3
+  38              		@ sp needed
+  39 0004 7047     		bx	lr
+  40              	.L3:
+  41 0006 C046     		.align	2
+  42              	.L2:
+  43 0008 00000000 		.word	.LANCHOR0
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s 			page 2
+
+
+  44              		.cfi_endproc
+  45              	.LFE40:
+  47              		.section	.text.dxl_set_rx_callback,"ax",%progbits
+  48              		.align	1
+  49              		.global	dxl_set_rx_callback
+  50              		.syntax unified
+  51              		.code	16
+  52              		.thumb_func
+  53              		.fpu softvfp
+  55              	dxl_set_rx_callback:
+  56              	.LVL1:
+  57              	.LFB41:
+  16:Core/Src/dxl_hal.c **** 
+  17:Core/Src/dxl_hal.c **** static void (*rx_callback)(void) = NULL;
+  18:Core/Src/dxl_hal.c **** void dxl_set_rx_callback(void (*func)(void))
+  19:Core/Src/dxl_hal.c **** {
+  58              		.loc 1 19 1 is_stmt 1 view -0
+  59              		.cfi_startproc
+  60              		@ args = 0, pretend = 0, frame = 0
+  61              		@ frame_needed = 0, uses_anonymous_args = 0
+  62              		@ link register save eliminated.
+  20:Core/Src/dxl_hal.c **** 	rx_callback = func;
+  63              		.loc 1 20 2 view .LVU5
+  64              		.loc 1 20 14 is_stmt 0 view .LVU6
+  65 0000 014B     		ldr	r3, .L5
+  66 0002 1860     		str	r0, [r3]
+  21:Core/Src/dxl_hal.c **** }
+  67              		.loc 1 21 1 view .LVU7
+  68              		@ sp needed
+  69 0004 7047     		bx	lr
+  70              	.L6:
+  71 0006 C046     		.align	2
+  72              	.L5:
+  73 0008 00000000 		.word	.LANCHOR1
+  74              		.cfi_endproc
+  75              	.LFE41:
+  77              		.section	.text.HAL_UART_TxCpltCallback,"ax",%progbits
+  78              		.align	1
+  79              		.global	HAL_UART_TxCpltCallback
+  80              		.syntax unified
+  81              		.code	16
+  82              		.thumb_func
+  83              		.fpu softvfp
+  85              	HAL_UART_TxCpltCallback:
+  86              	.LVL2:
+  87              	.LFB42:
+  22:Core/Src/dxl_hal.c **** 
+  23:Core/Src/dxl_hal.c **** void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+  24:Core/Src/dxl_hal.c **** {
+  88              		.loc 1 24 1 is_stmt 1 view -0
+  89              		.cfi_startproc
+  90              		@ args = 0, pretend = 0, frame = 0
+  91              		@ frame_needed = 0, uses_anonymous_args = 0
+  92              		.loc 1 24 1 is_stmt 0 view .LVU9
+  93 0000 10B5     		push	{r4, lr}
+  94              	.LCFI0:
+  95              		.cfi_def_cfa_offset 8
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s 			page 3
+
+
+  96              		.cfi_offset 4, -8
+  97              		.cfi_offset 14, -4
+  25:Core/Src/dxl_hal.c **** 	if (tx_callback != NULL)
+  98              		.loc 1 25 2 is_stmt 1 view .LVU10
+  99              		.loc 1 25 18 is_stmt 0 view .LVU11
+ 100 0002 034B     		ldr	r3, .L9
+ 101 0004 1B68     		ldr	r3, [r3]
+ 102              		.loc 1 25 5 view .LVU12
+ 103 0006 002B     		cmp	r3, #0
+ 104 0008 00D0     		beq	.L7
+  26:Core/Src/dxl_hal.c **** 		(*tx_callback)();
+ 105              		.loc 1 26 3 is_stmt 1 view .LVU13
+ 106              		.loc 1 26 4 is_stmt 0 view .LVU14
+ 107 000a 9847     		blx	r3
+ 108              	.LVL3:
+ 109              	.L7:
+  27:Core/Src/dxl_hal.c **** }
+ 110              		.loc 1 27 1 view .LVU15
+ 111              		@ sp needed
+ 112 000c 10BD     		pop	{r4, pc}
+ 113              	.L10:
+ 114 000e C046     		.align	2
+ 115              	.L9:
+ 116 0010 00000000 		.word	.LANCHOR0
+ 117              		.cfi_endproc
+ 118              	.LFE42:
+ 120              		.section	.text.HAL_UART_RxCpltCallback,"ax",%progbits
+ 121              		.align	1
+ 122              		.global	HAL_UART_RxCpltCallback
+ 123              		.syntax unified
+ 124              		.code	16
+ 125              		.thumb_func
+ 126              		.fpu softvfp
+ 128              	HAL_UART_RxCpltCallback:
+ 129              	.LVL4:
+ 130              	.LFB43:
+  28:Core/Src/dxl_hal.c **** 
+  29:Core/Src/dxl_hal.c **** void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+  30:Core/Src/dxl_hal.c **** {
+ 131              		.loc 1 30 1 is_stmt 1 view -0
+ 132              		.cfi_startproc
+ 133              		@ args = 0, pretend = 0, frame = 0
+ 134              		@ frame_needed = 0, uses_anonymous_args = 0
+ 135              		.loc 1 30 1 is_stmt 0 view .LVU17
+ 136 0000 10B5     		push	{r4, lr}
+ 137              	.LCFI1:
+ 138              		.cfi_def_cfa_offset 8
+ 139              		.cfi_offset 4, -8
+ 140              		.cfi_offset 14, -4
+  31:Core/Src/dxl_hal.c **** 	if (rx_callback != NULL)
+ 141              		.loc 1 31 2 is_stmt 1 view .LVU18
+ 142              		.loc 1 31 18 is_stmt 0 view .LVU19
+ 143 0002 034B     		ldr	r3, .L13
+ 144 0004 1B68     		ldr	r3, [r3]
+ 145              		.loc 1 31 5 view .LVU20
+ 146 0006 002B     		cmp	r3, #0
+ 147 0008 00D0     		beq	.L11
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s 			page 4
+
+
+  32:Core/Src/dxl_hal.c **** 		(*rx_callback)();
+ 148              		.loc 1 32 3 is_stmt 1 view .LVU21
+ 149              		.loc 1 32 4 is_stmt 0 view .LVU22
+ 150 000a 9847     		blx	r3
+ 151              	.LVL5:
+ 152              	.L11:
+  33:Core/Src/dxl_hal.c **** }
+ 153              		.loc 1 33 1 view .LVU23
+ 154              		@ sp needed
+ 155 000c 10BD     		pop	{r4, pc}
+ 156              	.L14:
+ 157 000e C046     		.align	2
+ 158              	.L13:
+ 159 0010 00000000 		.word	.LANCHOR1
+ 160              		.cfi_endproc
+ 161              	.LFE43:
+ 163              		.section	.text.dxl_hal_abort,"ax",%progbits
+ 164              		.align	1
+ 165              		.global	dxl_hal_abort
+ 166              		.syntax unified
+ 167              		.code	16
+ 168              		.thumb_func
+ 169              		.fpu softvfp
+ 171              	dxl_hal_abort:
+ 172              	.LFB44:
+  34:Core/Src/dxl_hal.c **** 
+  35:Core/Src/dxl_hal.c **** HAL_StatusTypeDef dxl_hal_abort(void)
+  36:Core/Src/dxl_hal.c **** {
+ 173              		.loc 1 36 1 is_stmt 1 view -0
+ 174              		.cfi_startproc
+ 175              		@ args = 0, pretend = 0, frame = 0
+ 176              		@ frame_needed = 0, uses_anonymous_args = 0
+ 177 0000 10B5     		push	{r4, lr}
+ 178              	.LCFI2:
+ 179              		.cfi_def_cfa_offset 8
+ 180              		.cfi_offset 4, -8
+ 181              		.cfi_offset 14, -4
+  37:Core/Src/dxl_hal.c **** 	//ASSERT(dxl_huart != NULL);
+  38:Core/Src/dxl_hal.c **** 
+  39:Core/Src/dxl_hal.c **** 	return HAL_UART_Abort(dxl_huart);
+ 182              		.loc 1 39 2 view .LVU25
+ 183              		.loc 1 39 9 is_stmt 0 view .LVU26
+ 184 0002 024B     		ldr	r3, .L16
+ 185 0004 1868     		ldr	r0, [r3]
+ 186 0006 FFF7FEFF 		bl	HAL_UART_Abort
+ 187              	.LVL6:
+  40:Core/Src/dxl_hal.c **** }
+ 188              		.loc 1 40 1 view .LVU27
+ 189              		@ sp needed
+ 190 000a 10BD     		pop	{r4, pc}
+ 191              	.L17:
+ 192              		.align	2
+ 193              	.L16:
+ 194 000c 00000000 		.word	.LANCHOR2
+ 195              		.cfi_endproc
+ 196              	.LFE44:
+ 198              		.section	.text.dxl_hal_set_baudrate,"ax",%progbits
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s 			page 5
+
+
+ 199              		.align	1
+ 200              		.global	dxl_hal_set_baudrate
+ 201              		.syntax unified
+ 202              		.code	16
+ 203              		.thumb_func
+ 204              		.fpu softvfp
+ 206              	dxl_hal_set_baudrate:
+ 207              	.LVL7:
+ 208              	.LFB45:
+  41:Core/Src/dxl_hal.c **** 
+  42:Core/Src/dxl_hal.c **** HAL_StatusTypeDef dxl_hal_set_baudrate(const int baudrate)
+  43:Core/Src/dxl_hal.c **** {
+ 209              		.loc 1 43 1 is_stmt 1 view -0
+ 210              		.cfi_startproc
+ 211              		@ args = 0, pretend = 0, frame = 0
+ 212              		@ frame_needed = 0, uses_anonymous_args = 0
+ 213              		.loc 1 43 1 is_stmt 0 view .LVU29
+ 214 0000 10B5     		push	{r4, lr}
+ 215              	.LCFI3:
+ 216              		.cfi_def_cfa_offset 8
+ 217              		.cfi_offset 4, -8
+ 218              		.cfi_offset 14, -4
+  44:Core/Src/dxl_hal.c **** 	//ASSERT(dxl_huart != NULL);
+  45:Core/Src/dxl_hal.c **** 
+  46:Core/Src/dxl_hal.c **** 	HAL_StatusTypeDef err;
+ 219              		.loc 1 46 2 is_stmt 1 view .LVU30
+  47:Core/Src/dxl_hal.c **** 	if ((err = dxl_hal_abort()) != HAL_OK)
+ 220              		.loc 1 47 2 view .LVU31
+ 221              		.loc 1 47 13 is_stmt 0 view .LVU32
+ 222 0002 FFF7FEFF 		bl	dxl_hal_abort
+ 223              	.LVL8:
+ 224              		.loc 1 47 5 view .LVU33
+ 225 0006 0028     		cmp	r0, #0
+ 226 0008 0BD1     		bne	.L19
+  48:Core/Src/dxl_hal.c **** 		return err;
+  49:Core/Src/dxl_hal.c **** 
+  50:Core/Src/dxl_hal.c **** // FIXME
+  51:Core/Src/dxl_hal.c **** 	__HAL_UART_DISABLE(dxl_huart);
+ 227              		.loc 1 51 2 is_stmt 1 view .LVU34
+ 228 000a 064B     		ldr	r3, .L20
+ 229 000c 1A68     		ldr	r2, [r3]
+ 230 000e 1468     		ldr	r4, [r2]
+ 231 0010 2268     		ldr	r2, [r4]
+ 232 0012 0121     		movs	r1, #1
+ 233 0014 8A43     		bics	r2, r1
+ 234 0016 2260     		str	r2, [r4]
+  52:Core/Src/dxl_hal.c **** //	LL_USART_SetBaudRate(dxl_huart->Instance, baudrate);
+  53:Core/Src/dxl_hal.c **** 	__HAL_UART_ENABLE(dxl_huart);
+ 235              		.loc 1 53 2 view .LVU35
+ 236 0018 1B68     		ldr	r3, [r3]
+ 237 001a 1A68     		ldr	r2, [r3]
+ 238 001c 1368     		ldr	r3, [r2]
+ 239 001e 0B43     		orrs	r3, r1
+ 240 0020 1360     		str	r3, [r2]
+  54:Core/Src/dxl_hal.c **** 
+  55:Core/Src/dxl_hal.c **** 	return HAL_OK;
+ 241              		.loc 1 55 2 view .LVU36
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s 			page 6
+
+
+ 242              	.L19:
+  56:Core/Src/dxl_hal.c **** }
+ 243              		.loc 1 56 1 is_stmt 0 view .LVU37
+ 244              		@ sp needed
+ 245 0022 10BD     		pop	{r4, pc}
+ 246              	.L21:
+ 247              		.align	2
+ 248              	.L20:
+ 249 0024 00000000 		.word	.LANCHOR2
+ 250              		.cfi_endproc
+ 251              	.LFE45:
+ 253              		.section	.text.dxl_hal_open,"ax",%progbits
+ 254              		.align	1
+ 255              		.global	dxl_hal_open
+ 256              		.syntax unified
+ 257              		.code	16
+ 258              		.thumb_func
+ 259              		.fpu softvfp
+ 261              	dxl_hal_open:
+ 262              	.LVL9:
+ 263              	.LFB46:
+  57:Core/Src/dxl_hal.c **** 
+  58:Core/Src/dxl_hal.c **** HAL_StatusTypeDef dxl_hal_open(UART_HandleTypeDef *huart, const int baudrate)
+  59:Core/Src/dxl_hal.c **** {
+ 264              		.loc 1 59 1 is_stmt 1 view -0
+ 265              		.cfi_startproc
+ 266              		@ args = 0, pretend = 0, frame = 0
+ 267              		@ frame_needed = 0, uses_anonymous_args = 0
+ 268              		.loc 1 59 1 is_stmt 0 view .LVU39
+ 269 0000 10B5     		push	{r4, lr}
+ 270              	.LCFI4:
+ 271              		.cfi_def_cfa_offset 8
+ 272              		.cfi_offset 4, -8
+ 273              		.cfi_offset 14, -4
+  60:Core/Src/dxl_hal.c **** 	dxl_huart = huart;
+ 274              		.loc 1 60 2 is_stmt 1 view .LVU40
+ 275              		.loc 1 60 12 is_stmt 0 view .LVU41
+ 276 0002 034B     		ldr	r3, .L23
+ 277 0004 1860     		str	r0, [r3]
+  61:Core/Src/dxl_hal.c **** 
+  62:Core/Src/dxl_hal.c **** 	return dxl_hal_set_baudrate(baudrate);
+ 278              		.loc 1 62 2 is_stmt 1 view .LVU42
+ 279              		.loc 1 62 9 is_stmt 0 view .LVU43
+ 280 0006 0800     		movs	r0, r1
+ 281              	.LVL10:
+ 282              		.loc 1 62 9 view .LVU44
+ 283 0008 FFF7FEFF 		bl	dxl_hal_set_baudrate
+ 284              	.LVL11:
+  63:Core/Src/dxl_hal.c **** }
+ 285              		.loc 1 63 1 view .LVU45
+ 286              		@ sp needed
+ 287 000c 10BD     		pop	{r4, pc}
+ 288              	.L24:
+ 289 000e C046     		.align	2
+ 290              	.L23:
+ 291 0010 00000000 		.word	.LANCHOR2
+ 292              		.cfi_endproc
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s 			page 7
+
+
+ 293              	.LFE46:
+ 295              		.section	.text.dxl_hal_close,"ax",%progbits
+ 296              		.align	1
+ 297              		.global	dxl_hal_close
+ 298              		.syntax unified
+ 299              		.code	16
+ 300              		.thumb_func
+ 301              		.fpu softvfp
+ 303              	dxl_hal_close:
+ 304              	.LFB47:
+  64:Core/Src/dxl_hal.c **** 
+  65:Core/Src/dxl_hal.c **** void dxl_hal_close(void)
+  66:Core/Src/dxl_hal.c **** {
+ 305              		.loc 1 66 1 is_stmt 1 view -0
+ 306              		.cfi_startproc
+ 307              		@ args = 0, pretend = 0, frame = 0
+ 308              		@ frame_needed = 0, uses_anonymous_args = 0
+ 309              		@ link register save eliminated.
+  67:Core/Src/dxl_hal.c **** 	dxl_huart = NULL;
+ 310              		.loc 1 67 2 view .LVU47
+ 311              		.loc 1 67 12 is_stmt 0 view .LVU48
+ 312 0000 014B     		ldr	r3, .L26
+ 313 0002 0022     		movs	r2, #0
+ 314 0004 1A60     		str	r2, [r3]
+  68:Core/Src/dxl_hal.c **** }
+ 315              		.loc 1 68 1 view .LVU49
+ 316              		@ sp needed
+ 317 0006 7047     		bx	lr
+ 318              	.L27:
+ 319              		.align	2
+ 320              	.L26:
+ 321 0008 00000000 		.word	.LANCHOR2
+ 322              		.cfi_endproc
+ 323              	.LFE47:
+ 325              		.section	.text.dxl_hal_tx,"ax",%progbits
+ 326              		.align	1
+ 327              		.global	dxl_hal_tx
+ 328              		.syntax unified
+ 329              		.code	16
+ 330              		.thumb_func
+ 331              		.fpu softvfp
+ 333              	dxl_hal_tx:
+ 334              	.LVL12:
+ 335              	.LFB48:
+  69:Core/Src/dxl_hal.c **** 
+  70:Core/Src/dxl_hal.c **** HAL_StatusTypeDef dxl_hal_tx(unsigned char* packet, const unsigned size)
+  71:Core/Src/dxl_hal.c **** {
+ 336              		.loc 1 71 1 is_stmt 1 view -0
+ 337              		.cfi_startproc
+ 338              		@ args = 0, pretend = 0, frame = 0
+ 339              		@ frame_needed = 0, uses_anonymous_args = 0
+ 340              		.loc 1 71 1 is_stmt 0 view .LVU51
+ 341 0000 70B5     		push	{r4, r5, r6, lr}
+ 342              	.LCFI5:
+ 343              		.cfi_def_cfa_offset 16
+ 344              		.cfi_offset 4, -16
+ 345              		.cfi_offset 5, -12
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s 			page 8
+
+
+ 346              		.cfi_offset 6, -8
+ 347              		.cfi_offset 14, -4
+ 348 0002 0500     		movs	r5, r0
+ 349 0004 0C00     		movs	r4, r1
+  72:Core/Src/dxl_hal.c **** 	// ASSERT(dxl_huart != NULL);
+  73:Core/Src/dxl_hal.c **** 	// ASSERT(packet != NULL);
+  74:Core/Src/dxl_hal.c **** 	// ASSERT(size > 0);
+  75:Core/Src/dxl_hal.c ****   	HAL_HalfDuplex_EnableTransmitter(dxl_huart);
+ 350              		.loc 1 75 4 is_stmt 1 view .LVU52
+ 351 0006 054E     		ldr	r6, .L29
+ 352 0008 3068     		ldr	r0, [r6]
+ 353              	.LVL13:
+ 354              		.loc 1 75 4 is_stmt 0 view .LVU53
+ 355 000a FFF7FEFF 		bl	HAL_HalfDuplex_EnableTransmitter
+ 356              	.LVL14:
+  76:Core/Src/dxl_hal.c **** 	return HAL_UART_Transmit(dxl_huart,packet,size,100);
+ 357              		.loc 1 76 2 is_stmt 1 view .LVU54
+ 358              		.loc 1 76 9 is_stmt 0 view .LVU55
+ 359 000e A2B2     		uxth	r2, r4
+ 360 0010 3068     		ldr	r0, [r6]
+ 361 0012 6423     		movs	r3, #100
+ 362 0014 2900     		movs	r1, r5
+ 363 0016 FFF7FEFF 		bl	HAL_UART_Transmit
+ 364              	.LVL15:
+  77:Core/Src/dxl_hal.c ****   
+  78:Core/Src/dxl_hal.c **** 	//return HAL_UART_Transmit_DMA(dxl_huart, packet, size);
+  79:Core/Src/dxl_hal.c **** }
+ 365              		.loc 1 79 1 view .LVU56
+ 366              		@ sp needed
+ 367              	.LVL16:
+ 368              	.LVL17:
+ 369              		.loc 1 79 1 view .LVU57
+ 370 001a 70BD     		pop	{r4, r5, r6, pc}
+ 371              	.L30:
+ 372              		.align	2
+ 373              	.L29:
+ 374 001c 00000000 		.word	.LANCHOR2
+ 375              		.cfi_endproc
+ 376              	.LFE48:
+ 378              		.section	.text.dxl_hal_rx,"ax",%progbits
+ 379              		.align	1
+ 380              		.global	dxl_hal_rx
+ 381              		.syntax unified
+ 382              		.code	16
+ 383              		.thumb_func
+ 384              		.fpu softvfp
+ 386              	dxl_hal_rx:
+ 387              	.LVL18:
+ 388              	.LFB49:
+  80:Core/Src/dxl_hal.c **** 
+  81:Core/Src/dxl_hal.c **** HAL_StatusTypeDef dxl_hal_rx(unsigned char *packet, const unsigned size)
+  82:Core/Src/dxl_hal.c **** {
+ 389              		.loc 1 82 1 is_stmt 1 view -0
+ 390              		.cfi_startproc
+ 391              		@ args = 0, pretend = 0, frame = 0
+ 392              		@ frame_needed = 0, uses_anonymous_args = 0
+ 393              		.loc 1 82 1 is_stmt 0 view .LVU59
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s 			page 9
+
+
+ 394 0000 70B5     		push	{r4, r5, r6, lr}
+ 395              	.LCFI6:
+ 396              		.cfi_def_cfa_offset 16
+ 397              		.cfi_offset 4, -16
+ 398              		.cfi_offset 5, -12
+ 399              		.cfi_offset 6, -8
+ 400              		.cfi_offset 14, -4
+ 401 0002 0500     		movs	r5, r0
+ 402 0004 0C00     		movs	r4, r1
+  83:Core/Src/dxl_hal.c **** 	// ASSERT(dxl_huart != NULL);
+  84:Core/Src/dxl_hal.c **** 	// ASSERT(packet != NULL);
+  85:Core/Src/dxl_hal.c **** 	// ASSERT(size > 0);
+  86:Core/Src/dxl_hal.c **** 	HAL_HalfDuplex_EnableReceiver(dxl_huart);
+ 403              		.loc 1 86 2 is_stmt 1 view .LVU60
+ 404 0006 054E     		ldr	r6, .L32
+ 405 0008 3068     		ldr	r0, [r6]
+ 406              	.LVL19:
+ 407              		.loc 1 86 2 is_stmt 0 view .LVU61
+ 408 000a FFF7FEFF 		bl	HAL_HalfDuplex_EnableReceiver
+ 409              	.LVL20:
+  87:Core/Src/dxl_hal.c **** 	//return HAL_UART_Receive_DMA(dxl_huart, packet, size);
+  88:Core/Src/dxl_hal.c **** 	return HAL_UART_Receive(dxl_huart,packet,size,100);	
+ 410              		.loc 1 88 2 is_stmt 1 view .LVU62
+ 411              		.loc 1 88 9 is_stmt 0 view .LVU63
+ 412 000e A2B2     		uxth	r2, r4
+ 413 0010 3068     		ldr	r0, [r6]
+ 414 0012 6423     		movs	r3, #100
+ 415 0014 2900     		movs	r1, r5
+ 416 0016 FFF7FEFF 		bl	HAL_UART_Receive
+ 417              	.LVL21:
+  89:Core/Src/dxl_hal.c **** }
+ 418              		.loc 1 89 1 view .LVU64
+ 419              		@ sp needed
+ 420              	.LVL22:
+ 421              	.LVL23:
+ 422              		.loc 1 89 1 view .LVU65
+ 423 001a 70BD     		pop	{r4, r5, r6, pc}
+ 424              	.L33:
+ 425              		.align	2
+ 426              	.L32:
+ 427 001c 00000000 		.word	.LANCHOR2
+ 428              		.cfi_endproc
+ 429              	.LFE49:
+ 431              		.global	dxl_huart
+ 432              		.section	.bss.dxl_huart,"aw",%nobits
+ 433              		.align	2
+ 434              		.set	.LANCHOR2,. + 0
+ 437              	dxl_huart:
+ 438 0000 00000000 		.space	4
+ 439              		.section	.bss.rx_callback,"aw",%nobits
+ 440              		.align	2
+ 441              		.set	.LANCHOR1,. + 0
+ 444              	rx_callback:
+ 445 0000 00000000 		.space	4
+ 446              		.section	.bss.tx_callback,"aw",%nobits
+ 447              		.align	2
+ 448              		.set	.LANCHOR0,. + 0
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s 			page 10
+
+
+ 451              	tx_callback:
+ 452 0000 00000000 		.space	4
+ 453              		.text
+ 454              	.Letext0:
+ 455              		.file 2 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgcc
+ 456              		.file 3 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgcc
+ 457              		.file 4 "Drivers/CMSIS/Device/ST/STM32F0xx/Include/system_stm32f0xx.h"
+ 458              		.file 5 "Drivers/CMSIS/Device/ST/STM32F0xx/Include/stm32f042x6.h"
+ 459              		.file 6 "Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_def.h"
+ 460              		.file 7 "Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_dma.h"
+ 461              		.file 8 "Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_uart.h"
+ 462              		.file 9 "Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal.h"
+ 463              		.file 10 "Core/Inc/usart.h"
+ 464              		.file 11 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgc
+ 465              		.file 12 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgc
+ 466              		.file 13 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgc
+ 467              		.file 14 "c:\\users\\pierre-anthony\\.vscode\\extensions\\buzzyelectronics.stm-helper-1.2.9\\armgc
+ 468              		.file 15 "Core/Inc/dynamixel.h"
+ARM GAS  C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s 			page 11
+
+
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 dxl_hal.c
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:16     .text.dxl_set_tx_callback:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:24     .text.dxl_set_tx_callback:0000000000000000 dxl_set_tx_callback
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:43     .text.dxl_set_tx_callback:0000000000000008 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:48     .text.dxl_set_rx_callback:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:55     .text.dxl_set_rx_callback:0000000000000000 dxl_set_rx_callback
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:73     .text.dxl_set_rx_callback:0000000000000008 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:78     .text.HAL_UART_TxCpltCallback:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:85     .text.HAL_UART_TxCpltCallback:0000000000000000 HAL_UART_TxCpltCallback
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:116    .text.HAL_UART_TxCpltCallback:0000000000000010 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:121    .text.HAL_UART_RxCpltCallback:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:128    .text.HAL_UART_RxCpltCallback:0000000000000000 HAL_UART_RxCpltCallback
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:159    .text.HAL_UART_RxCpltCallback:0000000000000010 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:164    .text.dxl_hal_abort:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:171    .text.dxl_hal_abort:0000000000000000 dxl_hal_abort
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:194    .text.dxl_hal_abort:000000000000000c $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:199    .text.dxl_hal_set_baudrate:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:206    .text.dxl_hal_set_baudrate:0000000000000000 dxl_hal_set_baudrate
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:249    .text.dxl_hal_set_baudrate:0000000000000024 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:254    .text.dxl_hal_open:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:261    .text.dxl_hal_open:0000000000000000 dxl_hal_open
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:291    .text.dxl_hal_open:0000000000000010 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:296    .text.dxl_hal_close:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:303    .text.dxl_hal_close:0000000000000000 dxl_hal_close
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:321    .text.dxl_hal_close:0000000000000008 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:326    .text.dxl_hal_tx:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:333    .text.dxl_hal_tx:0000000000000000 dxl_hal_tx
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:374    .text.dxl_hal_tx:000000000000001c $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:379    .text.dxl_hal_rx:0000000000000000 $t
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:386    .text.dxl_hal_rx:0000000000000000 dxl_hal_rx
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:427    .text.dxl_hal_rx:000000000000001c $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:437    .bss.dxl_huart:0000000000000000 dxl_huart
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:433    .bss.dxl_huart:0000000000000000 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:440    .bss.rx_callback:0000000000000000 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:444    .bss.rx_callback:0000000000000000 rx_callback
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:447    .bss.tx_callback:0000000000000000 $d
+C:\Users\PIERRE~1\AppData\Local\Temp\ccmmgpjw.s:451    .bss.tx_callback:0000000000000000 tx_callback
+
+UNDEFINED SYMBOLS
+HAL_UART_Abort
+HAL_HalfDuplex_EnableTransmitter
+HAL_UART_Transmit
+HAL_HalfDuplex_EnableReceiver
+HAL_UART_Receive
